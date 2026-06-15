@@ -1,0 +1,51 @@
+# Dependencies and package-manager caches
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+
+# Build, test, and tool output
+build/
+dist/
+coverage/
+.cache/
+.tmp/
+tmp/
+*.tsbuildinfo
+
+# Local runtime data and generated artifacts
+data/
+storage/
+uploads/
+releases/
+backups/
+Нормативные документы/
+Примеры отчетов и рассчетов/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.log
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python helpers used for local document inspection
+__pycache__/
+*.py[cod]
+.venv/
+venv/

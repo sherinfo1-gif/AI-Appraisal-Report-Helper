@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Report Helper</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" data-route="dashboard">
+        <span class="brand-mark">AR</span>
+        <span><strong>Оценка</strong><small>AI Report Helper</small></span>
+      </a>
+
+      <nav class="main-nav" aria-label="Основная навигация">
+        <button class="nav-item active" data-route="dashboard"><span>⌂</span><b>Главная</b></button>
+        <button class="nav-item" data-route="cases"><span>▤</span><b>Оценочные дела</b><i id="case-count">0</i></button>
+        <button class="nav-item" data-route="archive"><span>□</span><b>Архив</b></button>
+        <p>Управление знаниями</p>
+        <button class="nav-item" data-route="templates"><span>▧</span><b>Шаблоны</b></button>
+        <button class="nav-item" data-route="methodology"><span>◫</span><b>Методика</b></button>
+        <button class="nav-item" data-route="references"><span>⌘</span><b>Справочники</b></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" data-route="settings"><span>⚙</span><b>Настройки</b></button>
+        <div class="user-card">
+          <span class="avatar">АС</span>
+          <span><strong>Алексей Салиев</strong><small>Оценщик</small></span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <span class="breadcrumb" id="breadcrumb">Рабочий кабинет</span>
+          <h1 id="page-title">Главная</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="search-box"><span>⌕</span><input id="global-search" type="search" placeholder="Поиск дела или заказчика"></label>
+          <button class="primary-button" id="open-create-case">+ Новая оценка</button>
+        </div>
+      </header>
+
+      <main id="app" class="main-content" aria-live="polite">
+        <div class="loading-card">Загрузка рабочего пространства…</div>
+      </main>
+    </section>
+  </div>
+
+  <div class="modal-backdrop hidden" id="case-modal">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="case-modal-title">
+      <header class="modal-header">
+        <div><span class="eyebrow">Новое оценочное дело</span><h2 id="case-modal-title">Основные сведения</h2></div>
+        <button class="icon-button" id="close-case-modal" aria-label="Закрыть">×</button>
+      </header>
+
+      <form id="case-form">
+        <div class="modal-body">
+          <div class="mode-switch" id="mode-switch">
+            <button type="button" class="mode-option active" data-case-mode="single">
+              <strong>Один тип объектов</strong><small>Один профиль оценки и один результат</small>
+            </button>
+            <button type="button" class="mode-option" data-case-mode="composite">
+              <strong>Составное дело</strong><small>Несколько независимых групп активов</small>
+            </button>
+          </div>
+
+          <section class="form-section">
+            <div class="section-title"><span>01</span><div><strong>Общие данные</strong><small>Используются в ТЗ, договоре и отчете</small></div></div>
+            <div class="form-grid">
+              <label class="field wide"><span>Наименование дела *</span><input name="title" required placeholder="Например: Производственный имущественный комплекс"></label>
+              <label class="field"><span>Заказчик *</span><input name="customerName" required value="ООО «ORIENT FINANCE»"></label>
+              <label class="field"><span>Цель оценки *</span><select name="purpose"><option>Залоговое обеспечение</option><option>Купля-продажа</option><option>Финансовая отчетность</option><option>Иная цель</option></select></label>
+              <label class="field"><span>Вид стоимости *</span><select name="valueType"><option>Рыночная стоимость</option><option>Ликвидационная стоимость</option><option>Инвестиционная стоимость</option></select></label>
+              <label class="field"><span>Дата оценки *</span><input name="valuationDate" type="date" required></label>
+              <label class="field"><span>Срок выполнения</span><input name="deadline" type="date"></label>
+              <label class="field"><span>Оценщик *</span><select name="appraiserId" id="appraiser-select"></select></label>
+              <label class="field"><span>Проверяющий</span><select name="reviewerId" id="reviewer-select"></select></label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title"><span>02</span><div><strong>Состав объекта оценки</strong><small>Выберите профиль и тип объекта, затем добавьте группу</small></div></div>
+            <div class="direction-grid" id="direction-grid"></div>
+            <div class="object-picker">
+              <label class="field"><span>Тип объекта</span><select id="object-type-select"></select></label>
+              <label class="field"><span>Название группы</span><input id="group-title" placeholder="Название будет предложено автоматически"></label>
+              <button type="button" class="secondary-button" id="add-asset-group">+ Добавить группу</button>
+            </div>
+            <div class="asset-group-list" id="asset-group-list"></div>
+          </section>
+
+          <section class="form-section composite-only hidden" id="release-section">
+            <div class="section-title"><span>03</span><div><strong>Стратегия выпуска</strong><small>Можно изменить позднее без копирования расчетов</small></div></div>
+            <div class="release-options">
+              <label class="release-option active"><input type="radio" name="releaseStrategy" value="unified" checked><span><strong>Один объединенный отчет</strong><small>Общие разделы, главы по группам и сводное заключение</small></span></label>
+              <label class="release-option"><input type="radio" name="releaseStrategy" value="separate"><span><strong>Отдельные отчеты и общий пакет</strong><small>Самостоятельный выпуск по каждой группе активов</small></span></label>
+            </div>
+          </section>
+
+          <div class="form-error hidden" id="form-error"></div>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="secondary-button" id="cancel-case-modal">Отмена</button>
+          <button type="submit" class="primary-button" id="create-case-submit">Создать оценочное дело</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
