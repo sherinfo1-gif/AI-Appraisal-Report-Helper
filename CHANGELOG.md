@@ -11,6 +11,9 @@ The project does not yet have a stable public release.
 
 - Repository-wide Codex instructions in `AGENTS.md`.
 - Explicit repository structure and prototype/production boundary documentation.
+- Minimal GitHub Actions repository check for required files, Node dependency
+  installation, tests, and an optional build script.
+- npm lock file so CI can use reproducible `npm ci` installs.
 
 ### Changed
 

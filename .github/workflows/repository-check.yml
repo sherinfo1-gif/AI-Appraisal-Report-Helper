@@ -1,0 +1,101 @@
+name: Repository Check
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - "codex/**"
+      - "feature/**"
+      - "docs/**"
+      - "prototype/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-check:
+    name: Validate repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify required files and directories
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_files=(
+            "README.md"
+            "AGENTS.md"
+            "CHANGELOG.md"
+          )
+
+          required_directories=(
+            "docs"
+            "prototype"
+          )
+
+          for path in "${required_files[@]}"; do
+            if [[ ! -f "$path" ]]; then
+              echo "::error file=$path::Required file is missing: $path"
+              exit 1
+            fi
+          done
+
+          for path in "${required_directories[@]}"; do
+            if [[ ! -d "$path" ]]; then
+              echo "::error::$path directory is missing"
+              exit 1
+            fi
+          done
+
+      - name: Detect Node project scripts
+        id: node-project
+        shell: bash
+        run: |
+          if [[ ! -f package.json ]]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "test=false" >> "$GITHUB_OUTPUT"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "present=true" >> "$GITHUB_OUTPUT"
+          node -e "
+            const fs = require('node:fs');
+            const packageJson = require('./package.json');
+            const scripts = packageJson.scripts || {};
+            fs.appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              'test=' + Boolean(scripts.test) + '\n' +
+              'build=' + Boolean(scripts.build) + '\n'
+            );
+          "
+
+      - name: Set up Node.js
+        if: steps.node-project.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Node dependencies
+        if: steps.node-project.outputs.present == 'true'
+        run: npm ci
+
+      - name: Run Node tests
+        if: steps.node-project.outputs.test == 'true'
+        run: npm test
+
+      - name: Build Node project
+        if: steps.node-project.outputs.build == 'true'
+        run: npm run build
