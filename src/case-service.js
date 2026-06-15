@@ -18,7 +18,7 @@ const allowedTransitions = {
   archived: []
 };
 
-const starterArtifacts = [
+const trainingPilotArtifacts = [
   {
     key: "document-register",
     type: "document_register",
@@ -179,9 +179,6 @@ export function getCase(db, id) {
   `).get(id);
 
   if (!valuationCase) return null;
-
-  ensureReportSections(db, id);
-  ensurePilotWorkspace(db, id);
 
   const groups = db.prepare(`
     SELECT
@@ -372,7 +369,6 @@ export function createCase(db, input, actorId = "user-appraiser") {
     });
 
     ensureReportSections(db, caseId, actorId, now);
-    ensurePilotWorkspace(db, caseId, actorId, now);
 
     appendAudit(db, {
       caseId,
@@ -618,7 +614,10 @@ export function reviewArtifact(db, caseId, artifactId, input, actorId = "user-ap
 export function createTrainingPilot(db, actorId = "user-appraiser") {
   const title = "[Учебный пилот] Квартира в Ташкенте";
   const existing = db.prepare("SELECT id FROM valuation_cases WHERE title = ? ORDER BY created_at LIMIT 1").get(title);
-  if (existing) return getCase(db, existing.id);
+  if (existing) {
+    initializeTrainingPilotWorkspace(db, existing.id, actorId);
+    return getCase(db, existing.id);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const created = createCase(db, {
@@ -637,6 +636,7 @@ export function createTrainingPilot(db, actorId = "user-appraiser") {
     ]
   }, actorId);
 
+  initializeTrainingPilotWorkspace(db, created.id, actorId);
   createAgentTask(db, created.id, {
     prompt: "Подготовить рабочий план оценки учебной квартиры: определить необходимые документы, факты, вопросы, методику сравнительного подхода и структуру расчета."
   }, actorId);
@@ -773,7 +773,7 @@ function ensureReportSections(db, caseId, actorId = "user-appraiser", timestamp 
   });
 }
 
-function ensurePilotWorkspace(db, caseId, actorId = "user-appraiser", timestamp = new Date().toISOString()) {
+function initializeTrainingPilotWorkspace(db, caseId, actorId = "user-appraiser", timestamp = new Date().toISOString()) {
   const existingCount = Number(
     db.prepare("SELECT COUNT(*) AS count FROM artifacts WHERE case_id = ?").get(caseId)?.count || 0
   );
@@ -791,7 +791,7 @@ function ensurePilotWorkspace(db, caseId, actorId = "user-appraiser", timestamp 
     ) VALUES (?, ?, 1, ?, ?, 'Стартовая структура учебного проекта', ?)
   `);
 
-  for (const definition of starterArtifacts) {
+  for (const definition of trainingPilotArtifacts) {
     const artifactId = randomUUID();
     const result = insertArtifact.run(
       artifactId,

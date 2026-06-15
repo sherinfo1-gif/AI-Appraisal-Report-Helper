@@ -92,8 +92,12 @@ The working application currently provides:
 - controlled case lifecycle;
 - append-only audit history;
 - dashboard, case register, creation flow, and case detail;
-- a training apartment pilot with assignments, artifacts, versions, and
-  independent appraiser decisions.
+- an explicitly created training apartment pilot with assignments, artifacts,
+  versions, and independent appraiser decisions.
+
+The training pilot is created or reopened with
+`POST /api/pilots/real-estate`. Normal case reads are read-only and do not
+initialize demo artifacts.
 
 ## Discovery Prototype
 

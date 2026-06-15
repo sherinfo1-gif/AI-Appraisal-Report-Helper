@@ -17,6 +17,8 @@ The project does not yet have a stable public release.
 
 ### Changed
 
+- Separated training-pilot workspace initialization from normal case creation
+  and made case reads free of database writes.
 - Expanded the root README with repository status, layout, safety boundaries,
   and contribution workflow.
 - Expanded `.gitignore` for dependencies, build output, local runtime data,

@@ -31,8 +31,20 @@ test("creates a single-profile valuation case with audit history", () => {
   assert.equal(created.assetGroups.length, 1);
   assert.equal(created.assetGroups[0].directionCode, "real_estate");
   assert.equal(created.reportSections.length, 7);
+  assert.equal(created.artifacts.length, 0);
+  assert.equal(created.agentTasks.length, 0);
   assert.equal(created.audit[0].eventType, "case.created");
   assert.equal(listCases(db).length, 1);
+});
+
+test("reads a valuation case without changing persisted data", () => {
+  const created = createCase(db, sampleInput());
+  const before = persistenceSnapshot(db, created.id);
+
+  const loaded = getCase(db, created.id);
+
+  assert.equal(loaded.id, created.id);
+  assert.deepEqual(persistenceSnapshot(db, created.id), before);
 });
 
 test("creates a composite case with independent workflow profiles", () => {
@@ -108,6 +120,19 @@ test("creates a local pilot workspace with independently reviewed artifacts", ()
   assert.equal(getCase(db, created.id).artifacts.filter(item => item.reviewStatus === "accepted").length, 1);
 });
 
+test("initializes training pilot data only through the explicit pilot command", () => {
+  const regularCase = createCase(db, sampleInput());
+  assert.equal(getCase(db, regularCase.id).artifacts.length, 0);
+
+  const pilot = createTrainingPilot(db);
+  const reopenedPilot = createTrainingPilot(db);
+
+  assert.equal(pilot.artifacts.length, 8);
+  assert.equal(reopenedPilot.id, pilot.id);
+  assert.equal(reopenedPilot.artifacts.length, 8);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM artifacts").get().count, 8);
+});
+
 test("records assistant assignments without an external AI provider", () => {
   const created = createCase(db, sampleInput());
   const task = createAgentTask(db, created.id, {
@@ -133,5 +158,28 @@ function sampleInput() {
     assetGroups: [
       { directionCode: "real_estate", objectTypeCode: "apartment", title: "Квартира" }
     ]
+  };
+}
+
+function persistenceSnapshot(db, caseId) {
+  const tables = [
+    "valuation_cases",
+    "engagements",
+    "asset_groups",
+    "report_sections",
+    "report_section_versions",
+    "agent_tasks",
+    "artifacts",
+    "artifact_versions",
+    "artifact_reviews",
+    "audit_events"
+  ];
+  return {
+    totalChanges: Number(db.prepare("SELECT total_changes() AS count").get().count),
+    counts: Object.fromEntries(tables.map(table => [
+      table,
+      Number(db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count)
+    ])),
+    caseUpdatedAt: db.prepare("SELECT updated_at AS updatedAt FROM valuation_cases WHERE id = ?").get(caseId).updatedAt
   };
 }
