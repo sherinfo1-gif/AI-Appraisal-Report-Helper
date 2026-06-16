@@ -31,7 +31,7 @@ function migrate(db) {
       id TEXT PRIMARY KEY,
       organization_id TEXT NOT NULL REFERENCES organizations(id),
       full_name TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('administrator', 'appraiser', 'reviewer', 'methodologist')),
+      role TEXT NOT NULL CHECK (role IN ('director', 'appraiser', 'assistant_appraiser')),
       active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL
     );
@@ -217,6 +217,55 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_artifact_reviews_artifact ON artifact_reviews(artifact_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_audit_case ON audit_events(case_id, id DESC);
   `);
+  migrateUsersToBusinessRoles(db);
+}
+
+function migrateUsersToBusinessRoles(db) {
+  const usersTable = db.prepare(`
+    SELECT sql
+    FROM sqlite_master
+    WHERE type = 'table' AND name = 'users'
+  `).get();
+  if (!usersTable?.sql?.includes("'administrator'")) return;
+
+  db.exec("PRAGMA foreign_keys = OFF");
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.exec(`
+      CREATE TABLE users_new (
+        id TEXT PRIMARY KEY,
+        organization_id TEXT NOT NULL REFERENCES organizations(id),
+        full_name TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('director', 'appraiser', 'assistant_appraiser')),
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+
+      INSERT INTO users_new (id, organization_id, full_name, role, active, created_at)
+      SELECT
+        id,
+        organization_id,
+        full_name,
+        CASE role
+          WHEN 'administrator' THEN 'director'
+          WHEN 'reviewer' THEN 'director'
+          WHEN 'methodologist' THEN 'assistant_appraiser'
+          ELSE 'appraiser'
+        END,
+        active,
+        created_at
+      FROM users;
+
+      DROP TABLE users;
+      ALTER TABLE users_new RENAME TO users;
+    `);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON");
+  }
 }
 
 function seedReferenceData(db) {
@@ -227,10 +276,9 @@ function seedReferenceData(db) {
   `).run(now);
 
   const users = [
+    ["user-director", "Малика Каримова", "director"],
     ["user-appraiser", "Алексей Салиев", "appraiser"],
-    ["user-reviewer", "Малика Каримова", "reviewer"],
-    ["user-methodologist", "Методолог компании", "methodologist"],
-    ["user-admin", "Администратор", "administrator"]
+    ["user-assistant", "Дилшод Юсупов", "assistant_appraiser"]
   ];
   const insertUser = db.prepare(`
     INSERT OR IGNORE INTO users (id, organization_id, full_name, role, created_at)

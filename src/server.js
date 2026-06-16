@@ -46,10 +46,10 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === "/api/cases" && request.method === "POST") {
       const body = await readJson(request);
-      return sendJson(response, 201, createCase(db, body));
+      return sendJson(response, 201, createCase(db, body, readActorId(request, body)));
     }
     if (url.pathname === "/api/pilots/real-estate" && request.method === "POST") {
-      return sendJson(response, 201, createTrainingPilot(db));
+      return sendJson(response, 201, createTrainingPilot(db, readActorId(request)));
     }
 
     const caseMatch = url.pathname.match(/^\/api\/cases\/([0-9a-f-]+)$/);
@@ -63,7 +63,7 @@ const server = createServer(async (request, response) => {
     const statusMatch = url.pathname.match(/^\/api\/cases\/([0-9a-f-]+)\/status$/);
     if (statusMatch && request.method === "PATCH") {
       const body = await readJson(request);
-      const valuationCase = changeCaseStatus(db, statusMatch[1], body.status);
+      const valuationCase = changeCaseStatus(db, statusMatch[1], body.status, readActorId(request, body));
       return valuationCase
         ? sendJson(response, 200, valuationCase)
         : sendJson(response, 404, { error: "Оценочное дело не найдено" });
@@ -72,7 +72,7 @@ const server = createServer(async (request, response) => {
     const reportSectionMatch = url.pathname.match(/^\/api\/cases\/([0-9a-f-]+)\/report-sections\/([0-9a-f-]+)$/);
     if (reportSectionMatch && request.method === "PATCH") {
       const body = await readJson(request);
-      const section = updateReportSection(db, reportSectionMatch[1], reportSectionMatch[2], body);
+      const section = updateReportSection(db, reportSectionMatch[1], reportSectionMatch[2], body, readActorId(request, body));
       return section
         ? sendJson(response, 200, section)
         : sendJson(response, 404, { error: "Раздел отчета не найден" });
@@ -81,7 +81,7 @@ const server = createServer(async (request, response) => {
     const taskMatch = url.pathname.match(/^\/api\/cases\/([0-9a-f-]+)\/agent-tasks$/);
     if (taskMatch && request.method === "POST") {
       const body = await readJson(request);
-      const task = createAgentTask(db, taskMatch[1], body);
+      const task = createAgentTask(db, taskMatch[1], body, readActorId(request, body));
       return task
         ? sendJson(response, 201, task)
         : sendJson(response, 404, { error: "Оценочное дело не найдено" });
@@ -90,7 +90,7 @@ const server = createServer(async (request, response) => {
     const artifactMatch = url.pathname.match(/^\/api\/cases\/([0-9a-f-]+)\/artifacts\/([0-9a-f-]+)$/);
     if (artifactMatch && request.method === "PATCH") {
       const body = await readJson(request);
-      const artifact = updateArtifact(db, artifactMatch[1], artifactMatch[2], body);
+      const artifact = updateArtifact(db, artifactMatch[1], artifactMatch[2], body, readActorId(request, body));
       return artifact
         ? sendJson(response, 200, artifact)
         : sendJson(response, 404, { error: "Рабочий артефакт не найден" });
@@ -99,7 +99,7 @@ const server = createServer(async (request, response) => {
     const artifactReviewMatch = url.pathname.match(/^\/api\/cases\/([0-9a-f-]+)\/artifacts\/([0-9a-f-]+)\/review$/);
     if (artifactReviewMatch && request.method === "POST") {
       const body = await readJson(request);
-      const artifact = reviewArtifact(db, artifactReviewMatch[1], artifactReviewMatch[2], body);
+      const artifact = reviewArtifact(db, artifactReviewMatch[1], artifactReviewMatch[2], body, readActorId(request, body));
       return artifact
         ? sendJson(response, 200, artifact)
         : sendJson(response, 404, { error: "Рабочий артефакт не найден" });
@@ -145,6 +145,10 @@ async function readJson(request) {
   }
   if (!chunks.length) return {};
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+function readActorId(request, body = {}) {
+  return String(request.headers["x-actor-id"] || body.actorId || "").trim();
 }
 
 function serveStatic(pathname, response) {
