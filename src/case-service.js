@@ -21,7 +21,7 @@ const allowedTransitions = {
 const preparationRoles = new Set(["director", "appraiser", "assistant_appraiser"]);
 const appraiserAuthorityRoles = new Set(["director", "appraiser"]);
 
-const starterArtifacts = [
+const trainingPilotArtifacts = [
   {
     key: "document-register",
     type: "document_register",
@@ -378,7 +378,6 @@ export function createCase(db, input, actorId) {
     });
 
     ensureReportSections(db, caseId, actor.id, now);
-    ensurePilotWorkspace(db, caseId, actor.id, now);
 
     appendAudit(db, {
       caseId,
@@ -632,7 +631,10 @@ export function createTrainingPilot(db, actorId) {
   const actor = requireAppraiserAuthority(db, actorId, "create training pilots");
   const title = "[Учебный пилот] Квартира в Ташкенте";
   const existing = db.prepare("SELECT id FROM valuation_cases WHERE title = ? ORDER BY created_at LIMIT 1").get(title);
-  if (existing) return getCase(db, existing.id);
+  if (existing) {
+    initializeTrainingPilotWorkspace(db, existing.id, actor.id);
+    return getCase(db, existing.id);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const created = createCase(db, {
@@ -651,6 +653,7 @@ export function createTrainingPilot(db, actorId) {
     ]
   }, actor.id);
 
+  initializeTrainingPilotWorkspace(db, created.id, actor.id);
   createAgentTask(db, created.id, {
     prompt: "Подготовить рабочий план оценки учебной квартиры: определить необходимые документы, факты, вопросы, методику сравнительного подхода и структуру расчета."
   }, actor.id);
@@ -823,7 +826,7 @@ function ensureReportSections(db, caseId, actorId, timestamp = new Date().toISOS
   });
 }
 
-function ensurePilotWorkspace(db, caseId, actorId, timestamp = new Date().toISOString()) {
+function initializeTrainingPilotWorkspace(db, caseId, actorId, timestamp = new Date().toISOString()) {
   const existingCount = Number(
     db.prepare("SELECT COUNT(*) AS count FROM artifacts WHERE case_id = ?").get(caseId)?.count || 0
   );
@@ -841,7 +844,7 @@ function ensurePilotWorkspace(db, caseId, actorId, timestamp = new Date().toISOS
     ) VALUES (?, ?, 1, ?, ?, 'Стартовая структура учебного проекта', ?)
   `);
 
-  for (const definition of starterArtifacts) {
+  for (const definition of trainingPilotArtifacts) {
     const artifactId = randomUUID();
     const result = insertArtifact.run(
       artifactId,

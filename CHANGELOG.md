@@ -25,3 +25,5 @@ The project does not yet have a stable public release.
   excluded them from the public repository.
 - Limited final artifact acceptance and final case approval to appraisers and
   directors while keeping assistant appraiser preparation available.
+- Separated training-pilot artifact initialization from ordinary valuation
+  cases and kept case reads free of pilot data creation.
