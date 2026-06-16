@@ -98,6 +98,12 @@ The assistant panel can reveal sources and simulate accept, manual edit,
 regenerate, and reject actions. These interactions are static prototype state
 only and do not call an API or process files.
 
+The Object Description section now demonstrates the manual-edit path after an
+AI draft. The appraiser can open a prefilled edit panel, save an appraiser
+version, review a two-item version history, and rollback to the AI draft. This
+is a static versioning concept only; no database, document editor, or file
+generation is connected.
+
 Next prototype increment: add the director review path for findings escalated
 from this appraiser workflow. Keep it in `prototype/` as static demo data until
 the interaction model is approved.
