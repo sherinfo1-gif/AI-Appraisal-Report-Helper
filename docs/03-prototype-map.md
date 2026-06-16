@@ -91,6 +91,10 @@ Required clickable path:
 8. Choose one finding decision: corrected, disagree, or escalate to director.
 9. Review the case status summary.
 
+Next prototype increment: add the director review path for findings escalated
+from this appraiser workflow. Keep it in `prototype/` as static demo data until
+the interaction model is approved.
+
 ## Apartment Scenario
 
 | Step | Screen | Required prototype behavior |

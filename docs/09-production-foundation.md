@@ -14,6 +14,28 @@ The first production-oriented increment uses:
 The application does not currently require internet access or a cloud
 service. Customer data remains in the workspace infrastructure.
 
+## Current Status
+
+The foundation currently includes the minimal identity and role model needed
+for early appraisal workflows:
+
+- fixed roles: director, appraiser, and assistant appraiser;
+- explicit actor identity for material API write actions;
+- audit events that record the provided actor;
+- assistant appraiser preparation with final artifact acceptance and final case
+  approval reserved for appraisers and directors;
+- directors retaining appraiser-level authority while remaining recorded as
+  directors in audit history.
+
+The explicit training pilot is isolated from ordinary cases. Normal
+`POST /api/cases` and `GET /api/cases/:id` flows do not create pilot or demo
+artifacts. Pilot workspace and artifact initialization stays behind
+`POST /api/pilots/real-estate`.
+
+The current product-design focus should remain in the clickable prototype:
+continue with the director review and escalation workflow before implementing
+backend AI, OCR, DOCX/PDF/XLSX generation, calculations, or release snapshots.
+
 ## Implemented Domain Scope
 
 - organizations and fixed business roles: director, appraiser, and assistant

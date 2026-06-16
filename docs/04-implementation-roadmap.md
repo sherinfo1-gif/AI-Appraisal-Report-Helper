@@ -10,6 +10,29 @@
 - Preserve traceability from every report value to its source or calculation.
 - Keep all identifying data on company infrastructure.
 
+## Current State After PR #4
+
+The current foundation and prototype state includes:
+
+- minimal identity and role alignment in the application foundation for
+  director, appraiser, and assistant appraiser;
+- explicit local actor identity for audited foundation write actions, without
+  login, sessions, OAuth, or full user management;
+- role checks that keep assistant appraiser work preparatory while appraisers
+  and directors retain final approval authority;
+- training-pilot artifact isolation so normal case creation and case reads do
+  not create pilot or demo artifacts;
+- an explicit training pilot flow for fictional apartment data through
+  `POST /api/pilots/real-estate`;
+- an initial clickable appraiser workflow in the static prototype, covering
+  case overview, materials, report sections, helper findings, finding detail,
+  appraiser decisions, and status summary.
+
+The recommended next task is to continue prototype work with the director
+review and escalation workflow. Do not start backend implementation of
+AI, OCR, DOCX/PDF/XLSX generation, calculations, release snapshots, or
+external provider integration yet.
+
 ## Phase 0: Discovery Baseline
 
 Deliverables:
@@ -28,6 +51,10 @@ Deliverables:
 
 - design tokens and basic product identity;
 - dashboard and persistent navigation;
+- initial appraiser workflow from case list through helper finding decisions
+  and status summary;
+- director review and escalation workflow for findings escalated by an
+  appraiser;
 - complete apartment flow;
 - complex-property component, calculation, XLSX, and reconciliation screens;
 - report template outline and manually editable section composer;
@@ -37,11 +64,14 @@ Deliverables:
 Exit condition: stakeholders complete the prototype review script and approve
 the terminology, sequence, and layout.
 
+Current next step: extend the prototype with the director review path for an
+escalated finding before adding more backend behavior.
+
 ## Phase 2: Platform Foundation
 
 Deliverables:
 
-- local accounts and fixed roles;
+- fixed business roles and explicit local actor identity;
 - valuation-case lifecycle;
 - valuation directions, object types, and immutable workflow profiles;
 - structured engagement record and versioned assignment/contract templates;
@@ -49,6 +79,7 @@ Deliverables:
 - composite cases with independent asset groups and selectable release strategy;
 - local document storage;
 - append-only audit log;
+- training-pilot data isolated from ordinary cases;
 - background task processing;
 - encrypted backup and restore procedure.
 
