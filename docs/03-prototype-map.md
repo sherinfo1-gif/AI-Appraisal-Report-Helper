@@ -72,6 +72,25 @@ The same confirmed fields are reused in the case and final report.
 - Recently issued reports.
 - Primary action: `Create valuation case`.
 
+## Initial Appraiser Workflow
+
+The prototype now includes a lightweight first-pass appraiser workflow for the
+active apartment case. It is static demo data only and is not connected to the
+application API.
+
+Required clickable path:
+
+1. Open the dashboard or case list.
+2. Open the active apartment valuation case or create a case from the header
+   action.
+3. Review the case overview.
+4. Review uploaded/report materials as static demo cards.
+5. Review the report section structure.
+6. Open the helper findings list.
+7. Open a finding detail.
+8. Choose one finding decision: corrected, disagree, or escalate to director.
+9. Review the case status summary.
+
 ## Apartment Scenario
 
 | Step | Screen | Required prototype behavior |

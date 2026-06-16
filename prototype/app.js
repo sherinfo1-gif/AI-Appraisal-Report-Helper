@@ -158,12 +158,52 @@ const reportSections = [
   }
 ];
 
+const appraiserWorkflowMaterials = [
+  { icon: "SRC", name: "Cadastral extract", meta: "Uploaded source material - static demo", state: "Ready for review" },
+  { icon: "IMG", name: "Inspection photo set", meta: "12 exterior and interior photos - static demo", state: "Linked to object" },
+  { icon: "TXT", name: "Draft report text", meta: "Working copy assembled from template sections", state: "Needs findings review" },
+  { icon: "REF", name: "Market evidence notes", meta: "Comparable listing notes - no calculations in prototype", state: "Prepared" }
+];
+
+const appraiserFindings = [
+  {
+    id: "F-01",
+    severity: "warning",
+    title: "Source missing for discount range",
+    section: "5.2.1 Sales comparison approach",
+    summary: "The helper marks the bargaining discount explanation as incomplete.",
+    detail: "The report text mentions a market discount range, but the source reference is not shown in the section notes.",
+    source: "Draft report text - market evidence notes"
+  },
+  {
+    id: "F-02",
+    severity: "review",
+    title: "Object address wording differs across materials",
+    section: "3 Object description",
+    summary: "The cadastral extract and draft report use slightly different address wording.",
+    detail: "The appraiser should confirm the preferred wording before the section is sent for review.",
+    source: "Cadastral extract - draft report text"
+  },
+  {
+    id: "F-03",
+    severity: "info",
+    title: "Report section still needs appraiser decision",
+    section: "6 Final conclusion",
+    summary: "The conclusion is present as working text and is not marked ready for final review.",
+    detail: "This is a static workflow marker showing that final report text remains under appraiser control.",
+    source: "Draft report text"
+  }
+];
+
 let state = {
   view: "dashboard",
   caseId: null,
   stage: 0,
   context: "ai",
   reportSection: "approaches",
+  workflowTab: "overview",
+  selectedFindingId: "F-01",
+  findingDecisions: {},
   calculationMode: "native",
   valuationDirection: "real_estate",
   objectType: "Квартира",
@@ -767,6 +807,192 @@ function contextPanel() {
   </aside>`;
 }
 
+function workflowDecisionLabel(decision) {
+  if (decision === "corrected") return "Corrected";
+  if (decision === "disagree") return "Disagree";
+  if (decision === "escalate") return "Escalated to director";
+  return "Open";
+}
+
+function workflowDecisionClass(decision) {
+  if (decision === "corrected") return "status-issued";
+  if (decision === "disagree") return "status-returned";
+  if (decision === "escalate") return "status-review";
+  return "status-progress";
+}
+
+function workflowStatusSummary() {
+  const decisions = appraiserFindings.map(finding => state.findingDecisions[finding.id]);
+  const corrected = decisions.filter(decision => decision === "corrected").length;
+  const disagree = decisions.filter(decision => decision === "disagree").length;
+  const escalated = decisions.filter(decision => decision === "escalate").length;
+  const open = appraiserFindings.length - decisions.filter(Boolean).length;
+  const ready = open === 0 && escalated === 0;
+
+  return {
+    corrected,
+    disagree,
+    escalated,
+    open,
+    ready,
+    label: ready ? "Ready for review" : escalated ? "Director attention" : "Appraiser review",
+    className: ready ? "status-issued" : escalated ? "status-review" : "status-progress"
+  };
+}
+
+function workflowTabs() {
+  const tabs = [
+    ["overview", "Overview"],
+    ["materials", "Materials"],
+    ["report", "Report sections"],
+    ["findings", "Helper findings"],
+    ["status", "Status summary"]
+  ];
+  return `<div class="workflow-tabs">${tabs.map(([id, label]) => `
+    <button class="workflow-tab ${state.workflowTab === id ? "active" : ""}" data-workflow-tab="${id}">${label}</button>
+  `).join("")}</div>`;
+}
+
+function workflowOverview(item) {
+  return `
+    <div class="workflow-card-grid">
+      <article class="workflow-card"><span>Case</span><strong>${item.id}</strong><small>${item.customer}</small></article>
+      <article class="workflow-card"><span>Object</span><strong>Apartment valuation</strong><small>Static prototype case workspace</small></article>
+      <article class="workflow-card"><span>Current role</span><strong>Appraiser</strong><small>Decisions are local demo state only</small></article>
+      <article class="workflow-card"><span>Deadline</span><strong>${item.deadline}</strong><small>${item.status}</small></article>
+    </div>
+    <div class="info-callout"><strong>Initial appraiser path</strong><span>Open a case, review source materials, inspect the report outline, resolve helper findings, then check the case status summary.</span></div>
+    <div class="workflow-lane">
+      ${["Dashboard", "Case overview", "Materials", "Report structure", "Findings", "Decision", "Status"].map((step, index) => `
+        <div class="workflow-step ${index < 2 ? "done" : ""}"><i>${index + 1}</i><strong>${step}</strong></div>
+      `).join("")}
+    </div>`;
+}
+
+function workflowMaterials() {
+  return `
+    <div class="workflow-card-grid materials">
+      ${appraiserWorkflowMaterials.map(material => `
+        <article class="workflow-card material-card">
+          <div class="file-icon">${material.icon}</div>
+          <div><span>${material.state}</span><strong>${material.name}</strong><small>${material.meta}</small></div>
+        </article>
+      `).join("")}
+    </div>
+    <div class="warning-callout"><strong>Static materials only</strong><span>These cards are demo artifacts inside the clickable prototype. They do not upload, parse, generate, or persist files.</span></div>`;
+}
+
+function workflowReportSections() {
+  return `
+    <div class="workflow-outline">
+      ${reportSections.map(section => `
+        <article class="workflow-outline-row">
+          <span>${section.number}</span>
+          <div><strong>${section.title}</strong><small>${section.source}</small></div>
+          <i class="section-state ${section.status}"></i>
+        </article>
+      `).join("")}
+    </div>`;
+}
+
+function workflowFindings() {
+  const active = appraiserFindings.find(finding => finding.id === state.selectedFindingId) || appraiserFindings[0];
+  const decision = state.findingDecisions[active.id];
+
+  return `
+    <div class="workflow-findings-layout">
+      <div class="workflow-findings-list">
+        ${appraiserFindings.map(finding => {
+          const findingDecision = state.findingDecisions[finding.id];
+          return `<button class="finding-row ${finding.id === active.id ? "active" : ""}" data-finding-id="${finding.id}">
+            <span class="finding-severity ${finding.severity}"></span>
+            <div><strong>${finding.title}</strong><small>${finding.section}</small><em>${finding.summary}</em></div>
+            <i class="status-pill ${workflowDecisionClass(findingDecision)}">${workflowDecisionLabel(findingDecision)}</i>
+          </button>`;
+        }).join("")}
+      </div>
+      <article class="finding-detail">
+        <span class="eyebrow">${active.id} · ${active.section}</span>
+        <h3>${active.title}</h3>
+        <p>${active.detail}</p>
+        <div class="source-tag">${active.source}</div>
+        <div class="decision-actions">
+          ${[
+            ["corrected", "Corrected"],
+            ["disagree", "Disagree"],
+            ["escalate", "Escalate to director"]
+          ].map(([id, label]) => `<button class="${decision === id ? "primary-button" : "secondary-button"}" data-finding-action="${id}">${label}</button>`).join("")}
+        </div>
+      </article>
+    </div>`;
+}
+
+function workflowStatus() {
+  const summary = workflowStatusSummary();
+  return `
+    <div class="workflow-card-grid">
+      <article class="workflow-card"><span>Open findings</span><strong>${summary.open}</strong><small>Need appraiser action</small></article>
+      <article class="workflow-card"><span>Corrected</span><strong>${summary.corrected}</strong><small>Marked ready by appraiser</small></article>
+      <article class="workflow-card"><span>Disagree</span><strong>${summary.disagree}</strong><small>Appraiser rejected helper note</small></article>
+      <article class="workflow-card"><span>Director</span><strong>${summary.escalated}</strong><small>Escalated for attention</small></article>
+    </div>
+    <div class="${summary.ready ? "success-callout" : summary.escalated ? "warning-callout" : "info-callout"}">
+      <strong>${summary.label}</strong><span>${summary.ready ? "All helper findings have an appraiser decision." : "The case remains in the appraiser workflow until findings are resolved or escalated."}</span>
+    </div>
+    <div class="check-list">
+      ${appraiserFindings.map(finding => check(
+        state.findingDecisions[finding.id] ? "ok" : "warning",
+        finding.title,
+        finding.section,
+        workflowDecisionLabel(state.findingDecisions[finding.id])
+      )).join("")}
+    </div>`;
+}
+
+function workflowContent(item) {
+  if (state.workflowTab === "materials") return workflowMaterials();
+  if (state.workflowTab === "report") return workflowReportSections();
+  if (state.workflowTab === "findings") return workflowFindings();
+  if (state.workflowTab === "status") return workflowStatus();
+  return workflowOverview(item);
+}
+
+function workflowStatusPanel() {
+  const summary = workflowStatusSummary();
+  return `<aside class="context-panel workflow-summary-panel">
+    <div class="panel-header"><div><span class="eyebrow">Case status</span><h2>${summary.label}</h2></div><span class="status-pill ${summary.className}">${summary.open} open</span></div>
+    <div class="workflow-summary-list">
+      <div><span>Materials</span><strong>4 ready</strong></div>
+      <div><span>Report sections</span><strong>${reportSections.length} mapped</strong></div>
+      <div><span>Helper findings</span><strong>${appraiserFindings.length} total</strong></div>
+      <div><span>Escalations</span><strong>${summary.escalated}</strong></div>
+    </div>
+    <button class="primary-button" data-workflow-tab="status">Open status summary</button>
+  </aside>`;
+}
+
+function renderAppraiserWorkflow(id = "APT-026") {
+  const item = cases.find(c => c.id === id) || cases[0];
+  state.view = "appraiser-workflow";
+  state.caseId = item.id;
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+  setPage("Appraiser workflow", `Cases / ${item.id}`);
+  main.innerHTML = `
+    <div class="case-head">
+      <div><span class="eyebrow">${item.customer}</span><h2>${item.title}</h2><p>First appraiser workflow · static clickable prototype</p></div>
+      <div class="case-head-actions"><span class="status-pill ${item.statusClass}">${item.status}</span><button class="secondary-button" data-back-to-cases>Case list</button></div>
+    </div>
+    ${workflowTabs()}
+    <div class="case-layout appraiser-workflow-layout">
+      <section class="case-main">
+        <div class="section-header"><div><h3>${state.workflowTab === "overview" ? "Case overview" : state.workflowTab === "materials" ? "Materials overview" : state.workflowTab === "report" ? "Report section structure" : state.workflowTab === "findings" ? "Helper findings" : "Case status summary"}</h3><p>Prototype-only appraiser walkthrough for an active valuation case</p></div></div>
+        <div class="section-body">${workflowContent(item)}</div>
+      </section>
+      ${workflowStatusPanel()}
+    </div>`;
+  bindAppraiserWorkflowActions();
+}
+
 function renderCase(id) {
   const item = cases.find(c => c.id === id) || cases[0];
   state.caseId = item.id;
@@ -813,11 +1039,34 @@ function navigate(view) {
 
 function bindCommonActions() {
   document.querySelectorAll("[data-open-case]").forEach(el => el.addEventListener("click", () => {
+    if (el.dataset.openCase === "APT-026") {
+      state.workflowTab = "overview";
+      renderAppraiserWorkflow(el.dataset.openCase);
+      return;
+    }
     state.stage = el.dataset.openCase === "COM-011" ? 7 : 0;
     renderCase(el.dataset.openCase);
   }));
   document.querySelectorAll("[data-view-link]").forEach(el => el.addEventListener("click", () => navigate(el.dataset.viewLink)));
   document.querySelectorAll("[data-new-profile]").forEach(el => el.addEventListener("click", () => openCreateValuation(el.dataset.newProfile)));
+}
+
+function bindAppraiserWorkflowActions() {
+  document.querySelectorAll("[data-workflow-tab]").forEach(el => el.addEventListener("click", () => {
+    state.workflowTab = el.dataset.workflowTab;
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-finding-id]").forEach(el => el.addEventListener("click", () => {
+    state.selectedFindingId = el.dataset.findingId;
+    state.workflowTab = "findings";
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-finding-action]").forEach(el => el.addEventListener("click", () => {
+    state.findingDecisions[state.selectedFindingId] = el.dataset.findingAction;
+    state.workflowTab = "status";
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelector("[data-back-to-cases]")?.addEventListener("click", () => navigate("cases"));
 }
 
 function bindCaseActions() {
@@ -863,7 +1112,10 @@ document.getElementById("start-case").addEventListener("click", () => {
   modal.classList.add("hidden");
   state.stage = 0;
   if (state.caseMode === "composite") renderCompositeBlueprint();
-  else renderProfileBlueprint(state.valuationDirection);
+  else {
+    state.workflowTab = "overview";
+    renderAppraiserWorkflow("APT-026");
+  }
 });
 document.querySelectorAll("[data-direction]").forEach(el => el.addEventListener("click", () => selectValuationProfile(el.dataset.direction)));
 document.querySelectorAll("[data-case-mode]").forEach(el => el.addEventListener("click", () => setCaseMode(el.dataset.caseMode)));
