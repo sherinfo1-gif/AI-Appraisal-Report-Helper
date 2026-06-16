@@ -36,3 +36,5 @@ The project does not yet have a stable public release.
   cases and kept case reads free of pilot data creation.
 - Documented the current post-PR #4 state and the next recommended prototype
   task for director review and escalation.
+- Added a current prototype progress report covering merged prototype work,
+  deferred production items, and recommended next small prototype tasks.
