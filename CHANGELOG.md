@@ -17,6 +17,8 @@ The project does not yet have a stable public release.
 - Initial clickable appraiser workflow in the static prototype, including case
   overview, materials, report sections, helper findings, finding decisions, and
   status summary.
+- Static Case Workspace AI Assistant demo panel for an appraiser reviewing the
+  Object Description section in one prototype valuation case.
 
 ### Changed
 

@@ -195,13 +195,32 @@ const appraiserFindings = [
   }
 ];
 
+const caseWorkspaceSections = [
+  { id: "assignment", number: "1", title: "Assignment", status: "prepared", source: "Engagement record" },
+  { id: "object", number: "3", title: "Object Description", status: "ai-draft", source: "Cadastral extract and inspection notes" },
+  { id: "approach", number: "5.1", title: "Approach Selection", status: "manual", source: "Appraiser decision" },
+  { id: "comparison", number: "5.2.1", title: "Sales Comparison", status: "needs-review", source: "Market evidence notes" },
+  { id: "conclusion", number: "6", title: "Conclusion", status: "not-started", source: "Pending appraiser review" }
+];
+
+const aiAssistantSources = [
+  "Cadastral extract - APT-026",
+  "Inspection notes - 12 Jun 2026",
+  "Photo set - living area and facade",
+  "Draft report template - apartment collateral"
+];
+
 let state = {
   view: "dashboard",
   caseId: null,
   stage: 0,
   context: "ai",
   reportSection: "approaches",
-  workflowTab: "overview",
+  workflowTab: "workspace",
+  workspaceSection: "object",
+  aiAssistantAction: "draft",
+  aiDraftVariant: 0,
+  showAiSources: false,
   selectedFindingId: "F-01",
   findingDecisions: {},
   calculationMode: "native",
@@ -842,6 +861,7 @@ function workflowStatusSummary() {
 
 function workflowTabs() {
   const tabs = [
+    ["workspace", "Case workspace"],
     ["overview", "Overview"],
     ["materials", "Materials"],
     ["report", "Report sections"],
@@ -851,6 +871,80 @@ function workflowTabs() {
   return `<div class="workflow-tabs">${tabs.map(([id, label]) => `
     <button class="workflow-tab ${state.workflowTab === id ? "active" : ""}" data-workflow-tab="${id}">${label}</button>
   `).join("")}</div>`;
+}
+
+function workspaceStatus(section) {
+  if (section.id !== "object") return section.status;
+  if (state.aiAssistantAction === "accepted") return "accepted";
+  if (state.aiAssistantAction === "rejected") return "rejected";
+  if (state.aiAssistantAction === "regenerated") return "alternative draft";
+  if (state.aiAssistantAction === "editing") return "manual edit";
+  return "ai draft";
+}
+
+function workspaceStatusClass(section) {
+  const status = workspaceStatus(section);
+  if (status === "accepted") return "status-issued";
+  if (status === "rejected") return "status-returned";
+  if (status === "ai draft" || status === "alternative draft") return "status-review";
+  return "status-progress";
+}
+
+function selectedWorkspaceSection() {
+  return caseWorkspaceSections.find(section => section.id === state.workspaceSection) || caseWorkspaceSections[1];
+}
+
+function workflowWorkspace(item) {
+  const selected = selectedWorkspaceSection();
+  return `
+    <div class="workspace-top-grid">
+      <article class="workspace-case-card">
+        <span class="eyebrow">Demo case</span>
+        <h3>${item.id} - Apartment</h3>
+        <div class="workspace-meta-grid">
+          <div><span>Purpose</span><strong>Collateral / bank valuation</strong></div>
+          <div><span>Status</span><strong>In progress</strong></div>
+          <div><span>Appraiser</span><strong>Alexey Saliev</strong></div>
+          <div><span>Valuation date</span><strong>12 Jun 2026</strong></div>
+        </div>
+      </article>
+      <article class="workspace-materials-card">
+        <span class="eyebrow">Materials</span>
+        ${appraiserWorkflowMaterials.slice(0, 3).map(material => `
+          <div class="workspace-material-line"><span>${material.icon}</span><div><strong>${material.name}</strong><small>${material.state}</small></div></div>
+        `).join("")}
+      </article>
+    </div>
+    <div class="case-workspace-grid">
+      <aside class="workspace-section-list">
+        <div class="outline-head"><span>Report structure</span><strong>Apartment collateral template</strong></div>
+        ${caseWorkspaceSections.map(section => `
+          <button class="workspace-section-button ${section.id === selected.id ? "active" : ""}" data-workspace-section="${section.id}">
+            <span>${section.number}</span>
+            <div><strong>${section.title}</strong><small>${section.source}</small></div>
+            <i class="status-pill ${workspaceStatusClass(section)}">${workspaceStatus(section)}</i>
+          </button>
+        `).join("")}
+      </aside>
+      <article class="workspace-section-detail">
+        <div class="editor-head">
+          <div><span class="eyebrow">Selected section</span><h4>${selected.title}</h4></div>
+          <span class="status-pill ${workspaceStatusClass(selected)}">${workspaceStatus(selected)}</span>
+        </div>
+        ${selected.id === "object" ? `
+          <div class="ai-draft-preview">
+            <strong>${state.aiAssistantAction === "regenerated" ? "Alternative demo draft" : "AI prepared draft"}</strong>
+            <p>${state.aiAssistantAction === "regenerated"
+              ? "The subject is described as a residential apartment in a multi-storey building. The alternative draft keeps the address and area but shortens the condition summary for manual review."
+              : "The subject property is an apartment used for collateral valuation. The draft combines address, area, building type, inspection notes, and document references for appraiser review."}</p>
+          </div>
+          ${state.aiAssistantAction === "rejected" ? `<div class="danger-callout"><strong>Draft rejected</strong><span>Appraiser comment: source wording must be corrected manually before this section is prepared.</span></div>` : ""}
+          ${state.aiAssistantAction === "editing" ? `<div class="info-callout"><strong>Manual editing mode</strong><span>The prototype marks this section as manually edited. No backend editor or document generation is connected.</span></div>` : ""}
+        ` : `
+          <div class="info-callout"><strong>${selected.title}</strong><span>Select Object Description to show the AI Assistant demo panel and draft actions.</span></div>
+        `}
+      </article>
+    </div>`;
 }
 
 function workflowOverview(item) {
@@ -950,11 +1044,53 @@ function workflowStatus() {
 }
 
 function workflowContent(item) {
+  if (state.workflowTab === "workspace") return workflowWorkspace(item);
   if (state.workflowTab === "materials") return workflowMaterials();
   if (state.workflowTab === "report") return workflowReportSections();
   if (state.workflowTab === "findings") return workflowFindings();
   if (state.workflowTab === "status") return workflowStatus();
   return workflowOverview(item);
+}
+
+function aiAssistantDemoPanel() {
+  const selected = selectedWorkspaceSection();
+  const objectSelected = selected.id === "object";
+  const confidence = state.aiAssistantAction === "regenerated" ? "Medium" : state.aiAssistantAction === "rejected" ? "Low" : "Medium-high";
+  return `<aside class="context-panel ai-assistant-demo-panel">
+    <div class="panel-header">
+      <div><span class="eyebrow">AI Assistant demo</span><h2>${objectSelected ? "Object Description" : "Select Object Description"}</h2></div>
+      <span class="status-pill ${objectSelected ? workspaceStatusClass(selected) : "status-progress"}">${objectSelected ? workspaceStatus(selected) : "idle"}</span>
+    </div>
+    <div class="assistant-chat">
+      <div class="assistant-bubble">
+        <strong>Assistant</strong>
+        <p>${objectSelected ? "I prepared a draft object description from the available static case materials. Please review before accepting it." : "Select the Object Description section to review the prepared draft."}</p>
+      </div>
+    </div>
+    <div class="assistant-section">
+      <span>Prepared</span>
+      <p>${objectSelected ? "Draft paragraph for apartment object description, source list, and risk notes." : "No section selected for assistant draft."}</p>
+    </div>
+    <div class="assistant-section">
+      <span>Sources used</span>
+      <p>${objectSelected ? "Cadastral extract, inspection notes, photo set, and report template." : "None"}</p>
+    </div>
+    <div class="assistant-section">
+      <span>Could not determine</span>
+      <p>${objectSelected ? "Legal wording for final ownership statement and whether the latest address spelling is approved." : "No assistant check has run."}</p>
+    </div>
+    <div class="assistant-risk ${confidence === "Low" ? "low" : "medium"}"><strong>${confidence}</strong><span>confidence / risk indicator</span></div>
+    ${state.showAiSources && objectSelected ? `<div class="assistant-sources">
+      ${aiAssistantSources.map(source => `<div><span class="file-icon">SRC</span><strong>${source}</strong></div>`).join("")}
+    </div>` : ""}
+    <div class="assistant-actions">
+      <button class="primary-button" data-ai-action="accept" ${objectSelected ? "" : "disabled"}>Accept draft</button>
+      <button class="secondary-button" data-ai-action="edit" ${objectSelected ? "" : "disabled"}>Edit manually</button>
+      <button class="secondary-button" data-ai-action="regenerate" ${objectSelected ? "" : "disabled"}>Regenerate</button>
+      <button class="secondary-button" data-ai-action="reject" ${objectSelected ? "" : "disabled"}>Reject</button>
+      <button class="ghost-button" data-ai-action="sources" ${objectSelected ? "" : "disabled"}>Show sources</button>
+    </div>
+  </aside>`;
 }
 
 function workflowStatusPanel() {
@@ -985,10 +1121,10 @@ function renderAppraiserWorkflow(id = "APT-026") {
     ${workflowTabs()}
     <div class="case-layout appraiser-workflow-layout">
       <section class="case-main">
-        <div class="section-header"><div><h3>${state.workflowTab === "overview" ? "Case overview" : state.workflowTab === "materials" ? "Materials overview" : state.workflowTab === "report" ? "Report section structure" : state.workflowTab === "findings" ? "Helper findings" : "Case status summary"}</h3><p>Prototype-only appraiser walkthrough for an active valuation case</p></div></div>
+        <div class="section-header"><div><h3>${state.workflowTab === "workspace" ? "Case Workspace" : state.workflowTab === "overview" ? "Case overview" : state.workflowTab === "materials" ? "Materials overview" : state.workflowTab === "report" ? "Report section structure" : state.workflowTab === "findings" ? "Helper findings" : "Case status summary"}</h3><p>Prototype-only appraiser workspace for one active valuation case</p></div></div>
         <div class="section-body">${workflowContent(item)}</div>
       </section>
-      ${workflowStatusPanel()}
+      ${state.workflowTab === "workspace" ? aiAssistantDemoPanel() : workflowStatusPanel()}
     </div>`;
   bindAppraiserWorkflowActions();
 }
@@ -1040,7 +1176,7 @@ function navigate(view) {
 function bindCommonActions() {
   document.querySelectorAll("[data-open-case]").forEach(el => el.addEventListener("click", () => {
     if (el.dataset.openCase === "APT-026") {
-      state.workflowTab = "overview";
+      state.workflowTab = "workspace";
       renderAppraiserWorkflow(el.dataset.openCase);
       return;
     }
@@ -1054,6 +1190,24 @@ function bindCommonActions() {
 function bindAppraiserWorkflowActions() {
   document.querySelectorAll("[data-workflow-tab]").forEach(el => el.addEventListener("click", () => {
     state.workflowTab = el.dataset.workflowTab;
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-workspace-section]").forEach(el => el.addEventListener("click", () => {
+    state.workspaceSection = el.dataset.workspaceSection;
+    state.workflowTab = "workspace";
+    state.showAiSources = false;
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-ai-action]").forEach(el => el.addEventListener("click", () => {
+    if (el.dataset.aiAction === "accept") state.aiAssistantAction = "accepted";
+    if (el.dataset.aiAction === "edit") state.aiAssistantAction = "editing";
+    if (el.dataset.aiAction === "reject") state.aiAssistantAction = "rejected";
+    if (el.dataset.aiAction === "regenerate") {
+      state.aiAssistantAction = "regenerated";
+      state.aiDraftVariant += 1;
+    }
+    if (el.dataset.aiAction === "sources") state.showAiSources = !state.showAiSources;
+    state.workflowTab = "workspace";
     renderAppraiserWorkflow(state.caseId);
   }));
   document.querySelectorAll("[data-finding-id]").forEach(el => el.addEventListener("click", () => {
@@ -1113,7 +1267,7 @@ document.getElementById("start-case").addEventListener("click", () => {
   state.stage = 0;
   if (state.caseMode === "composite") renderCompositeBlueprint();
   else {
-    state.workflowTab = "overview";
+    state.workflowTab = "workspace";
     renderAppraiserWorkflow("APT-026");
   }
 });
