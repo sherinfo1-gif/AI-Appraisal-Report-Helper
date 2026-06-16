@@ -91,6 +91,13 @@ Required clickable path:
 8. Choose one finding decision: corrected, disagree, or escalate to director.
 9. Review the case status summary.
 
+The active case also includes a Case Workspace view for `APT-026`. This view
+shows basic case information, a static materials summary, report sections, the
+selected Object Description section, and a right-side AI Assistant demo panel.
+The assistant panel can reveal sources and simulate accept, manual edit,
+regenerate, and reject actions. These interactions are static prototype state
+only and do not call an API or process files.
+
 Next prototype increment: add the director review path for findings escalated
 from this appraiser workflow. Keep it in `prototype/` as static demo data until
 the interaction model is approved.
