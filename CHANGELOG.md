@@ -14,6 +14,9 @@ The project does not yet have a stable public release.
 - Minimal foundation identity model with director, appraiser, and assistant
   appraiser roles.
 - Explicit actor identity handling for audited foundation write actions.
+- Initial clickable appraiser workflow in the static prototype, including case
+  overview, materials, report sections, helper findings, finding decisions, and
+  status summary.
 
 ### Changed
 
