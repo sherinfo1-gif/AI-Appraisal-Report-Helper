@@ -30,3 +30,5 @@ The project does not yet have a stable public release.
   directors while keeping assistant appraiser preparation available.
 - Separated training-pilot artifact initialization from ordinary valuation
   cases and kept case reads free of pilot data creation.
+- Documented the current post-PR #4 state and the next recommended prototype
+  task for director review and escalation.
