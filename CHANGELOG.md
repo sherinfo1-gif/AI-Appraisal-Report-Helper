@@ -19,6 +19,8 @@ The project does not yet have a stable public release.
   status summary.
 - Static Case Workspace AI Assistant demo panel for an appraiser reviewing the
   Object Description section in one prototype valuation case.
+- Manual edit, version history, and rollback demo for the prototype Object
+  Description section.
 
 ### Changed
 

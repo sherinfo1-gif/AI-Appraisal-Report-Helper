@@ -919,6 +919,32 @@ kbd { border-color: #e3e7ed; color: #8a94a6; box-shadow: 0 1px 1px rgba(16,24,40
 .ai-draft-preview { margin-top: 16px; padding: 16px; border: 1px solid #dbe5fa; border-radius: 12px; background: #f7faff; }
 .ai-draft-preview strong { display: block; margin-bottom: 8px; }
 .ai-draft-preview p { margin: 0; color: #475467; line-height: 1.62; }
+.manual-edit-panel, .version-history {
+  margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfe;
+}
+.manual-edit-panel > div:first-child strong { display: block; margin-top: 4px; }
+.manual-edit-panel textarea {
+  width: 100%; min-height: 160px; margin-top: 12px; padding: 12px; border: 1px solid #dfe4ec;
+  border-radius: 10px; color: var(--ink); background: white; resize: vertical; line-height: 1.55;
+}
+.manual-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.version-history-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.version-history-head strong { font-size: 12px; }
+.version-row {
+  display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center;
+  padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: white; margin-top: 8px;
+}
+.version-row.active { border-color: #adc3f8; background: var(--blue-50); }
+.version-row.muted { opacity: .68; }
+.version-row > span {
+  width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px;
+  color: var(--blue-700); background: var(--blue-100); font-size: 10px; font-weight: 800;
+}
+.version-row strong, .version-row small { display: block; }
+.version-row small { color: var(--muted); font-size: 10px; }
+.version-row i { color: var(--blue-700); font-size: 10px; font-style: normal; font-weight: 800; }
+.version-history > button { margin-top: 12px; }
+.version-history .success-callout { margin: 12px 0 0; }
 .ai-assistant-demo-panel { overflow: hidden; }
 .assistant-chat, .assistant-section, .assistant-risk, .assistant-sources, .assistant-actions { margin: 14px 18px 0; }
 .assistant-bubble { padding: 14px; border-radius: 13px 13px 13px 4px; color: #1f2a44; background: #edf4ff; border: 1px solid #d9e6ff; }

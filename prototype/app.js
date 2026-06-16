@@ -210,6 +210,10 @@ const aiAssistantSources = [
   "Draft report template - apartment collateral"
 ];
 
+const objectDescriptionAiDraft = "The subject property is an apartment used for collateral valuation. The draft combines address, area, building type, inspection notes, and document references for appraiser review.";
+const objectDescriptionAlternativeDraft = "The subject is described as a residential apartment in a multi-storey building. The alternative draft keeps the address and area but shortens the condition summary for manual review.";
+const objectDescriptionEditedDraft = "The subject property is a residential apartment prepared for collateral valuation. The appraiser version keeps the verified address and area, removes uncertain legal wording, and leaves final ownership wording for later confirmation.";
+
 let state = {
   view: "dashboard",
   caseId: null,
@@ -220,6 +224,9 @@ let state = {
   workspaceSection: "object",
   aiAssistantAction: "draft",
   aiDraftVariant: 0,
+  activeObjectVersion: 1,
+  manualEditText: "",
+  rollbackMessage: false,
   showAiSources: false,
   selectedFindingId: "F-01",
   findingDecisions: {},
@@ -879,6 +886,7 @@ function workspaceStatus(section) {
   if (state.aiAssistantAction === "rejected") return "rejected";
   if (state.aiAssistantAction === "regenerated") return "alternative draft";
   if (state.aiAssistantAction === "editing") return "manual edit";
+  if (state.activeObjectVersion === 2) return "appraiser version";
   return "ai draft";
 }
 
@@ -886,12 +894,43 @@ function workspaceStatusClass(section) {
   const status = workspaceStatus(section);
   if (status === "accepted") return "status-issued";
   if (status === "rejected") return "status-returned";
-  if (status === "ai draft" || status === "alternative draft") return "status-review";
+  if (status === "ai draft" || status === "alternative draft" || status === "appraiser version") return "status-review";
   return "status-progress";
 }
 
 function selectedWorkspaceSection() {
   return caseWorkspaceSections.find(section => section.id === state.workspaceSection) || caseWorkspaceSections[1];
+}
+
+function objectDescriptionText() {
+  if (state.activeObjectVersion === 2) return state.manualEditText || objectDescriptionEditedDraft;
+  if (state.aiAssistantAction === "regenerated") return objectDescriptionAlternativeDraft;
+  return objectDescriptionAiDraft;
+}
+
+function manualEditPanel() {
+  return `<div class="manual-edit-panel">
+    <div><span class="eyebrow">Manual edit</span><strong>Appraiser may correct or replace the AI draft</strong></div>
+    <textarea data-manual-edit-text>${state.manualEditText || objectDescriptionText()}</textarea>
+    <div class="manual-edit-actions">
+      <button class="primary-button" data-manual-action="save">Save as new version</button>
+      <button class="secondary-button" data-manual-action="cancel">Cancel edit</button>
+    </div>
+  </div>`;
+}
+
+function versionHistoryBlock() {
+  return `<div class="version-history">
+    <div class="version-history-head"><span class="eyebrow">Version history</span><strong>Object Description</strong></div>
+    <div class="version-row ${state.activeObjectVersion === 1 ? "active" : ""}">
+      <span>V1</span><div><strong>AI draft</strong><small>Prepared by assistant demo · 10:12</small></div><i>${state.activeObjectVersion === 1 ? "Active" : "Previous"}</i>
+    </div>
+    <div class="version-row ${state.activeObjectVersion === 2 ? "active" : ""} ${state.manualEditText ? "" : "muted"}">
+      <span>V2</span><div><strong>Appraiser edited version</strong><small>${state.manualEditText ? "Appraiser edit · 10:24" : "Not saved yet"}</small></div><i>${state.activeObjectVersion === 2 ? "Active" : state.manualEditText ? "Available" : "Pending"}</i>
+    </div>
+    ${state.activeObjectVersion === 2 ? `<button class="secondary-button" data-manual-action="rollback">Rollback to AI draft</button>` : ""}
+    ${state.rollbackMessage ? `<div class="success-callout"><strong>Rollback applied</strong><span>The active demo version is restored to Version 1: AI draft.</span></div>` : ""}
+  </div>`;
 }
 
 function workflowWorkspace(item) {
@@ -933,13 +972,12 @@ function workflowWorkspace(item) {
         </div>
         ${selected.id === "object" ? `
           <div class="ai-draft-preview">
-            <strong>${state.aiAssistantAction === "regenerated" ? "Alternative demo draft" : "AI prepared draft"}</strong>
-            <p>${state.aiAssistantAction === "regenerated"
-              ? "The subject is described as a residential apartment in a multi-storey building. The alternative draft keeps the address and area but shortens the condition summary for manual review."
-              : "The subject property is an apartment used for collateral valuation. The draft combines address, area, building type, inspection notes, and document references for appraiser review."}</p>
+            <strong>${state.activeObjectVersion === 2 ? "Appraiser edited version" : state.aiAssistantAction === "regenerated" ? "Alternative demo draft" : "AI prepared draft"}</strong>
+            <p>${objectDescriptionText()}</p>
           </div>
           ${state.aiAssistantAction === "rejected" ? `<div class="danger-callout"><strong>Draft rejected</strong><span>Appraiser comment: source wording must be corrected manually before this section is prepared.</span></div>` : ""}
-          ${state.aiAssistantAction === "editing" ? `<div class="info-callout"><strong>Manual editing mode</strong><span>The prototype marks this section as manually edited. No backend editor or document generation is connected.</span></div>` : ""}
+          ${state.aiAssistantAction === "editing" ? manualEditPanel() : ""}
+          ${versionHistoryBlock()}
         ` : `
           <div class="info-callout"><strong>${selected.title}</strong><span>Select Object Description to show the AI Assistant demo panel and draft actions.</span></div>
         `}
@@ -1200,13 +1238,41 @@ function bindAppraiserWorkflowActions() {
   }));
   document.querySelectorAll("[data-ai-action]").forEach(el => el.addEventListener("click", () => {
     if (el.dataset.aiAction === "accept") state.aiAssistantAction = "accepted";
-    if (el.dataset.aiAction === "edit") state.aiAssistantAction = "editing";
-    if (el.dataset.aiAction === "reject") state.aiAssistantAction = "rejected";
+    if (el.dataset.aiAction === "edit") {
+      state.aiAssistantAction = "editing";
+      state.rollbackMessage = false;
+    }
+    if (el.dataset.aiAction === "reject") {
+      state.aiAssistantAction = "rejected";
+      state.activeObjectVersion = 1;
+      state.rollbackMessage = false;
+    }
     if (el.dataset.aiAction === "regenerate") {
       state.aiAssistantAction = "regenerated";
       state.aiDraftVariant += 1;
+      state.activeObjectVersion = 1;
+      state.rollbackMessage = false;
     }
     if (el.dataset.aiAction === "sources") state.showAiSources = !state.showAiSources;
+    state.workflowTab = "workspace";
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-manual-action]").forEach(el => el.addEventListener("click", () => {
+    if (el.dataset.manualAction === "save") {
+      state.manualEditText = document.querySelector("[data-manual-edit-text]")?.value || objectDescriptionEditedDraft;
+      state.activeObjectVersion = 2;
+      state.aiAssistantAction = "manual-saved";
+      state.rollbackMessage = false;
+    }
+    if (el.dataset.manualAction === "cancel") {
+      state.aiAssistantAction = state.activeObjectVersion === 2 ? "manual-saved" : "draft";
+      state.rollbackMessage = false;
+    }
+    if (el.dataset.manualAction === "rollback") {
+      state.activeObjectVersion = 1;
+      state.aiAssistantAction = "draft";
+      state.rollbackMessage = true;
+    }
     state.workflowTab = "workspace";
     renderAppraiserWorkflow(state.caseId);
   }));
