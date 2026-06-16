@@ -108,13 +108,13 @@ are provided by the pinned workflow profile.
 
 | Role | Main permissions |
 | --- | --- |
-| Administrator | Users, organization settings, storage, integrations, and access |
-| Appraiser | Create/accept cases, enter data, edit calculations and report sections, respond to comments |
-| Reviewer | Read the full case, create comments, return stages, approve or reject release |
-| Methodologist | Manage methodology, compliance rules, standard formulas, and report templates |
+| Director | Appraiser-level authority plus company-level final control; remains recorded as director in audit events |
+| Appraiser | Create and accept cases, enter data, prepare materials, approve working artifacts, and perform final case approval |
+| Assistant appraiser | Prepare working materials, draft artifacts, report sections, and assistant assignments before appraiser or director acceptance |
 
-The reviewer does not silently overwrite the appraiser's work. Any direct
-change made under an exceptional permission is separately attributed.
+The director is not merged into the appraiser role. Assistant appraiser work
+is explicitly preparatory: final artifact acceptance and final case approval
+belong to an appraiser or director and are separately attributed.
 
 ## Lifecycle
 

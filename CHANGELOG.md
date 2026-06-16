@@ -11,6 +11,9 @@ The project does not yet have a stable public release.
 
 - Repository-wide Codex instructions in `AGENTS.md`.
 - Explicit repository structure and prototype/production boundary documentation.
+- Minimal foundation identity model with director, appraiser, and assistant
+  appraiser roles.
+- Explicit actor identity handling for audited foundation write actions.
 
 ### Changed
 
@@ -20,3 +23,5 @@ The project does not yet have a stable public release.
   editor files, logs, caches, and secrets.
 - Kept source reports, calculation workbooks, and regulatory PDFs local and
   excluded them from the public repository.
+- Limited final artifact acceptance and final case approval to appraisers and
+  directors while keeping assistant appraiser preparation available.

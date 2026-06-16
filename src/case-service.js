@@ -18,6 +18,9 @@ const allowedTransitions = {
   archived: []
 };
 
+const preparationRoles = new Set(["director", "appraiser", "assistant_appraiser"]);
+const appraiserAuthorityRoles = new Set(["director", "appraiser"]);
+
 const starterArtifacts = [
   {
     key: "document-register",
@@ -180,9 +183,6 @@ export function getCase(db, id) {
 
   if (!valuationCase) return null;
 
-  ensureReportSections(db, id);
-  ensurePilotWorkspace(db, id);
-
   const groups = db.prepare(`
     SELECT
       g.id,
@@ -212,7 +212,8 @@ export function getCase(db, id) {
       a.entity_id AS entityId,
       a.payload_json AS payloadJson,
       a.created_at AS createdAt,
-      u.full_name AS actorName
+      u.full_name AS actorName,
+      u.role AS actorRole
     FROM audit_events a
     JOIN users u ON u.id = a.actor_id
     WHERE a.case_id = ?
@@ -301,8 +302,13 @@ export function getCase(db, id) {
   };
 }
 
-export function createCase(db, input, actorId = "user-appraiser") {
+export function createCase(db, input, actorId) {
+  const actor = requireAppraiserAuthority(db, actorId, "create valuation cases");
   const normalized = normalizeCaseInput(input);
+  validateUserRole(db, normalized.appraiserId, appraiserAuthorityRoles, "appraiserId");
+  if (normalized.reviewerId) {
+    validateUserRole(db, normalized.reviewerId, appraiserAuthorityRoles, "reviewerId");
+  }
   const now = new Date().toISOString();
   const engagementId = randomUUID();
   const caseId = randomUUID();
@@ -371,12 +377,12 @@ export function createCase(db, input, actorId = "user-appraiser") {
       );
     });
 
-    ensureReportSections(db, caseId, actorId, now);
-    ensurePilotWorkspace(db, caseId, actorId, now);
+    ensureReportSections(db, caseId, actor.id, now);
+    ensurePilotWorkspace(db, caseId, actor.id, now);
 
     appendAudit(db, {
       caseId,
-      actorId,
+      actorId: actor.id,
       eventType: "case.created",
       entityType: "valuation_case",
       entityId: caseId,
@@ -396,9 +402,12 @@ export function createCase(db, input, actorId = "user-appraiser") {
   }
 }
 
-export function changeCaseStatus(db, id, nextStatus, actorId = "user-appraiser") {
+export function changeCaseStatus(db, id, nextStatus, actorId) {
   const current = db.prepare("SELECT status FROM valuation_cases WHERE id = ?").get(id);
   if (!current) return null;
+  const actor = ["approved", "issued"].includes(nextStatus)
+    ? requireAppraiserAuthority(db, actorId, "perform final case approval")
+    : requirePreparationActor(db, actorId, "change case status");
   if (!caseStatuses[nextStatus]) throw new ValidationError("Неизвестный статус дела");
   if (!allowedTransitions[current.status].includes(nextStatus)) {
     throw new ValidationError(`Переход из статуса «${caseStatuses[current.status]}» в «${caseStatuses[nextStatus]}» недопустим`);
@@ -411,7 +420,7 @@ export function changeCaseStatus(db, id, nextStatus, actorId = "user-appraiser")
       .run(nextStatus, now, id);
     appendAudit(db, {
       caseId: id,
-      actorId,
+      actorId: actor.id,
       eventType: "case.status_changed",
       entityType: "valuation_case",
       entityId: id,
@@ -426,7 +435,8 @@ export function changeCaseStatus(db, id, nextStatus, actorId = "user-appraiser")
   }
 }
 
-export function updateReportSection(db, caseId, sectionId, input, actorId = "user-appraiser") {
+export function updateReportSection(db, caseId, sectionId, input, actorId) {
+  const actor = requirePreparationActor(db, actorId, "prepare report sections");
   const section = db.prepare(`
     SELECT s.*, c.status AS case_status
     FROM report_sections s
@@ -452,17 +462,17 @@ export function updateReportSection(db, caseId, sectionId, input, actorId = "use
       SET content = ?, origin = 'manual', status = 'draft',
           version = ?, updated_by = ?, updated_at = ?
       WHERE id = ?
-    `).run(content, nextVersion, actorId, now, sectionId);
+    `).run(content, nextVersion, actor.id, now, sectionId);
     db.prepare(`
       INSERT INTO report_section_versions (
         id, section_id, version, content, origin,
         author_id, change_note, created_at
       ) VALUES (?, ?, ?, ?, 'manual', ?, ?, ?)
-    `).run(randomUUID(), sectionId, nextVersion, content, actorId, changeNote, now);
+    `).run(randomUUID(), sectionId, nextVersion, content, actor.id, changeNote, now);
     db.prepare("UPDATE valuation_cases SET updated_at = ? WHERE id = ?").run(now, caseId);
     appendAudit(db, {
       caseId,
-      actorId,
+      actorId: actor.id,
       eventType: "report_section.updated",
       entityType: "report_section",
       entityId: sectionId,
@@ -477,7 +487,8 @@ export function updateReportSection(db, caseId, sectionId, input, actorId = "use
   }
 }
 
-export function createAgentTask(db, caseId, input, actorId = "user-appraiser") {
+export function createAgentTask(db, caseId, input, actorId) {
+  const actor = requirePreparationActor(db, actorId, "create assistant assignments");
   const valuationCase = db.prepare("SELECT id, status FROM valuation_cases WHERE id = ?").get(caseId);
   if (!valuationCase) return null;
   if (["issued", "archived"].includes(valuationCase.status)) {
@@ -496,11 +507,11 @@ export function createAgentTask(db, caseId, input, actorId = "user-appraiser") {
       INSERT INTO agent_tasks (
         id, case_id, prompt, status, created_by, created_at, updated_at
       ) VALUES (?, ?, ?, 'planned', ?, ?, ?)
-    `).run(id, caseId, prompt, actorId, now, now);
+    `).run(id, caseId, prompt, actor.id, now, now);
     db.prepare("UPDATE valuation_cases SET updated_at = ? WHERE id = ?").run(now, caseId);
     appendAudit(db, {
       caseId,
-      actorId,
+      actorId: actor.id,
       eventType: "agent_task.created",
       entityType: "agent_task",
       entityId: id,
@@ -515,7 +526,8 @@ export function createAgentTask(db, caseId, input, actorId = "user-appraiser") {
   }
 }
 
-export function updateArtifact(db, caseId, artifactId, input, actorId = "user-appraiser") {
+export function updateArtifact(db, caseId, artifactId, input, actorId) {
+  const actor = requirePreparationActor(db, actorId, "prepare working artifacts");
   const artifact = db.prepare(`
     SELECT a.*, c.status AS case_status
     FROM artifacts a
@@ -541,16 +553,16 @@ export function updateArtifact(db, caseId, artifactId, input, actorId = "user-ap
       SET content = ?, version = ?, review_status = 'proposed',
           updated_by = ?, updated_at = ?
       WHERE id = ?
-    `).run(content, nextVersion, actorId, now, artifactId);
+    `).run(content, nextVersion, actor.id, now, artifactId);
     db.prepare(`
       INSERT INTO artifact_versions (
         id, artifact_id, version, content, author_id, change_note, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(randomUUID(), artifactId, nextVersion, content, actorId, changeNote, now);
+    `).run(randomUUID(), artifactId, nextVersion, content, actor.id, changeNote, now);
     db.prepare("UPDATE valuation_cases SET updated_at = ? WHERE id = ?").run(now, caseId);
     appendAudit(db, {
       caseId,
-      actorId,
+      actorId: actor.id,
       eventType: "artifact.updated",
       entityType: "artifact",
       entityId: artifactId,
@@ -565,7 +577,8 @@ export function updateArtifact(db, caseId, artifactId, input, actorId = "user-ap
   }
 }
 
-export function reviewArtifact(db, caseId, artifactId, input, actorId = "user-appraiser") {
+export function reviewArtifact(db, caseId, artifactId, input, actorId) {
+  const actor = requireAppraiserAuthority(db, actorId, "accept or reject working artifacts");
   const artifact = db.prepare(`
     SELECT a.*, c.status AS case_status
     FROM artifacts a
@@ -596,11 +609,11 @@ export function reviewArtifact(db, caseId, artifactId, input, actorId = "user-ap
       INSERT INTO artifact_reviews (
         id, artifact_id, status, comment, reviewer_id, created_at
       ) VALUES (?, ?, ?, ?, ?, ?)
-    `).run(reviewId, artifactId, status, comment, actorId, now);
+    `).run(reviewId, artifactId, status, comment, actor.id, now);
     db.prepare("UPDATE valuation_cases SET updated_at = ? WHERE id = ?").run(now, caseId);
     appendAudit(db, {
       caseId,
-      actorId,
+      actorId: actor.id,
       eventType: "artifact.reviewed",
       entityType: "artifact",
       entityId: artifactId,
@@ -615,7 +628,8 @@ export function reviewArtifact(db, caseId, artifactId, input, actorId = "user-ap
   }
 }
 
-export function createTrainingPilot(db, actorId = "user-appraiser") {
+export function createTrainingPilot(db, actorId) {
+  const actor = requireAppraiserAuthority(db, actorId, "create training pilots");
   const title = "[Учебный пилот] Квартира в Ташкенте";
   const existing = db.prepare("SELECT id FROM valuation_cases WHERE title = ? ORDER BY created_at LIMIT 1").get(title);
   if (existing) return getCase(db, existing.id);
@@ -627,19 +641,19 @@ export function createTrainingPilot(db, actorId = "user-appraiser") {
     purpose: "Тестирование рабочего процесса оценки",
     valueType: "Рыночная стоимость",
     valuationDate: today,
-    appraiserId: actorId,
-    reviewerId: "user-reviewer",
+    appraiserId: actor.id,
+    reviewerId: "user-director",
     caseMode: "single",
     releaseStrategy: "unified",
     notes: "Учебный объект. Не использовать для реального заключения.",
     assetGroups: [
       { directionCode: "real_estate", objectTypeCode: "apartment", title: "Учебная квартира" }
     ]
-  }, actorId);
+  }, actor.id);
 
   createAgentTask(db, created.id, {
     prompt: "Подготовить рабочий план оценки учебной квартиры: определить необходимые документы, факты, вопросы, методику сравнительного подхода и структуру расчета."
-  }, actorId);
+  }, actor.id);
   return getCase(db, created.id);
 }
 
@@ -703,7 +717,43 @@ function appendAudit(db, { caseId, actorId, eventType, entityType, entityId, pay
   `).run(caseId, actorId, eventType, entityType, entityId, JSON.stringify(payload), now);
 }
 
-function ensureReportSections(db, caseId, actorId = "user-appraiser", timestamp = new Date().toISOString()) {
+function requirePreparationActor(db, actorId, action) {
+  return requireActorRole(db, actorId, preparationRoles, action);
+}
+
+function requireAppraiserAuthority(db, actorId, action) {
+  return requireActorRole(db, actorId, appraiserAuthorityRoles, action);
+}
+
+function requireActorRole(db, actorId, allowedRoles, action) {
+  const actor = getActiveUser(db, actorId);
+  if (!actor) throw new ValidationError("Explicit active actor identity is required");
+  if (!allowedRoles.has(actor.role)) {
+    throw new ValidationError(`Role ${actor.role} cannot ${action}`);
+  }
+  return actor;
+}
+
+function validateUserRole(db, userId, allowedRoles, fieldName) {
+  const user = getActiveUser(db, userId);
+  if (!user) throw new ValidationError(`${fieldName} must reference an active user`);
+  if (!allowedRoles.has(user.role)) {
+    throw new ValidationError(`${fieldName} must be director or appraiser`);
+  }
+  return user;
+}
+
+function getActiveUser(db, userId) {
+  const id = String(userId || "").trim();
+  if (!id) return null;
+  return db.prepare(`
+    SELECT id, full_name AS fullName, role
+    FROM users
+    WHERE id = ? AND active = 1
+  `).get(id);
+}
+
+function ensureReportSections(db, caseId, actorId, timestamp = new Date().toISOString()) {
   const existingCount = Number(
     db.prepare("SELECT COUNT(*) AS count FROM report_sections WHERE case_id = ?").get(caseId)?.count || 0
   );
@@ -773,7 +823,7 @@ function ensureReportSections(db, caseId, actorId = "user-appraiser", timestamp 
   });
 }
 
-function ensurePilotWorkspace(db, caseId, actorId = "user-appraiser", timestamp = new Date().toISOString()) {
+function ensurePilotWorkspace(db, caseId, actorId, timestamp = new Date().toISOString()) {
   const existingCount = Number(
     db.prepare("SELECT COUNT(*) AS count FROM artifacts WHERE case_id = ?").get(caseId)?.count || 0
   );

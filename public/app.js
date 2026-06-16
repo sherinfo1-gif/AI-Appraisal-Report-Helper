@@ -6,6 +6,7 @@ const state = {
   selectedCase: null,
   selectedArtifactId: null,
   selectedReportSectionId: null,
+  currentActorId: null,
   createMode: "single",
   selectedDirection: "real_estate",
   draftGroups: []
@@ -31,6 +32,7 @@ async function boot() {
     state.metadata = metadata;
     state.dashboard = dashboard;
     state.cases = cases;
+    populateActorSelector();
     populateUsers();
     renderDirectionPicker();
     renderAssetGroups();
@@ -420,8 +422,8 @@ function bindRenderedActions() {
 }
 
 function populateUsers() {
-  const appraisers = state.metadata.users.filter(user => ["appraiser", "administrator"].includes(user.role));
-  const reviewers = state.metadata.users.filter(user => ["reviewer", "methodologist"].includes(user.role));
+  const appraisers = state.metadata.users.filter(user => ["director", "appraiser"].includes(user.role));
+  const reviewers = state.metadata.users.filter(user => ["director", "appraiser"].includes(user.role));
   document.getElementById("appraiser-select").innerHTML = appraisers.map(user => `<option value="${user.id}">${user.fullName}</option>`).join("");
   document.getElementById("reviewer-select").innerHTML = `<option value="">Не назначен</option>${reviewers.map(user => `<option value="${user.id}">${user.fullName}</option>`).join("")}`;
 }
@@ -430,6 +432,29 @@ function renderReleaseSelection() {
   document.querySelectorAll(".release-option").forEach(option => {
     option.classList.toggle("active", option.querySelector("input").checked);
   });
+}
+
+function populateActorSelector() {
+  const select = document.getElementById("actor-select");
+  if (!select) return;
+  const preferredActor = state.metadata.users.find(user => user.role === "appraiser")
+    || state.metadata.users.find(user => user.role === "director")
+    || state.metadata.users[0];
+  state.currentActorId = preferredActor?.id || null;
+  select.innerHTML = state.metadata.users
+    .map(user => `<option value="${user.id}" ${user.id === state.currentActorId ? "selected" : ""}>${user.fullName} · ${roleLabel(user.role)}</option>`)
+    .join("");
+  select.addEventListener("change", () => {
+    state.currentActorId = select.value;
+  });
+}
+
+function roleLabel(role) {
+  return {
+    director: "director",
+    appraiser: "appraiser",
+    assistant_appraiser: "assistant"
+  }[role] || role;
 }
 
 function setDefaultDates() {
@@ -799,8 +824,11 @@ function showToast(message, error = false) {
 }
 
 async function api(path, options = {}) {
+  const method = options.method || "GET";
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (method !== "GET" && state.currentActorId) headers["X-Actor-Id"] = state.currentActorId;
   const response = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers,
     ...options
   });
   const data = await response.json();

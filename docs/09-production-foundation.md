@@ -16,7 +16,8 @@ service. Customer data remains in the workspace infrastructure.
 
 ## Implemented Domain Scope
 
-- organizations and fixed user roles;
+- organizations and fixed business roles: director, appraiser, and assistant
+  appraiser;
 - six valuation directions;
 - versioned object-type definitions;
 - immutable workflow-profile version 1 for every direction;
@@ -26,6 +27,7 @@ service. Customer data remains in the workspace infrastructure.
 - unified or separate release strategy;
 - controlled case-status transitions;
 - append-only audit events.
+- explicit actor identity for material write actions;
 - structured report sections;
 - manual report-section editing with immutable versions.
 - local assistant assignments without an external AI provider;
@@ -53,7 +55,10 @@ service. Customer data remains in the workspace infrastructure.
 ## Current Boundaries
 
 - Authentication is not implemented yet; seeded local users represent the
-  future fixed roles.
+  current fixed business roles. API write actions accept an explicit local
+  actor identity but do not implement login, sessions, or password policy.
+- Assistant appraisers can prepare working materials, but artifact acceptance
+  and final case approval are limited to appraisers and directors.
 - Report sections can be edited and versioned, but structured field,
   methodology, and calculation bindings are the next practical increment.
 - Assistant assignments are currently performed manually with Codex and stored

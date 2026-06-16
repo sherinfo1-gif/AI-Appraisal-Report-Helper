@@ -26,10 +26,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" data-route="settings"><span>⚙</span><b>Настройки</b></button>
-        <div class="user-card">
-          <span class="avatar">АС</span>
-          <span><strong>Алексей Салиев</strong><small>Оценщик</small></span>
-        </div>
+        <label class="actor-card">Current actor<select id="actor-select" aria-label="Current actor"></select></label>
       </div>
     </aside>
 
@@ -79,7 +76,7 @@
               <label class="field"><span>Дата оценки *</span><input name="valuationDate" type="date" required></label>
               <label class="field"><span>Срок выполнения</span><input name="deadline" type="date"></label>
               <label class="field"><span>Оценщик *</span><select name="appraiserId" id="appraiser-select"></select></label>
-              <label class="field"><span>Проверяющий</span><select name="reviewerId" id="reviewer-select"></select></label>
+              <label class="field"><span>Final approver</span><select name="reviewerId" id="reviewer-select"></select></label>
             </div>
           </section>
 
