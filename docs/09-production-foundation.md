@@ -31,7 +31,7 @@ service. Customer data remains in the workspace infrastructure.
 - structured report sections;
 - manual report-section editing with immutable versions.
 - local assistant assignments without an external AI provider;
-- eight independently reviewed pilot artifacts per case;
+- eight independently reviewed artifacts for the explicit training pilot;
 - immutable artifact versions and review decisions;
 - an idempotent training pilot for one apartment.
 
@@ -64,7 +64,9 @@ service. Customer data remains in the workspace infrastructure.
 - Assistant assignments are currently performed manually with Codex and stored
   in the case. No OpenAI or Gemini provider is connected yet.
 - The training pilot uses fictional apartment data and must not be treated as
-  an appraisal conclusion.
+  an appraisal conclusion. Its workspace is initialized only through
+  `POST /api/pilots/real-estate`; normal case creation and
+  `GET /api/cases/:id` do not create pilot artifacts.
 - Assignment and contract records are present at the data level, but document
   template management and DOCX/PDF generation are not implemented.
 - Asset-group workspaces currently expose their pinned profile but not
