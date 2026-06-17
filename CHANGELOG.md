@@ -21,6 +21,9 @@ The project does not yet have a stable public release.
   Object Description section in one prototype valuation case.
 - Manual edit, version history, and rollback demo for the prototype Object
   Description section.
+- Static Sources Detail View in the prototype AI Assistant panel with
+  field-level source mapping, confidence, status grouping, and demo review
+  actions.
 
 ### Changed
 

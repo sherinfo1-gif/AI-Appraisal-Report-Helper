@@ -203,11 +203,63 @@ const caseWorkspaceSections = [
   { id: "conclusion", number: "6", title: "Conclusion", status: "not-started", source: "Pending appraiser review" }
 ];
 
-const aiAssistantSources = [
-  "Cadastral extract - APT-026",
-  "Inspection notes - 12 Jun 2026",
-  "Photo set - living area and facade",
-  "Draft report template - apartment collateral"
+const aiSourceFieldMappings = [
+  {
+    id: "address",
+    field: "Address",
+    value: "Tashkent, Shota Rustaveli street, 53",
+    document: "Cadastral document - APT-026",
+    confidence: "high",
+    status: "confirmed"
+  },
+  {
+    id: "area",
+    field: "Area",
+    value: "84.60 sq m",
+    document: "Technical passport - apartment sheet",
+    confidence: "high",
+    status: "needs-review"
+  },
+  {
+    id: "cadastral-number",
+    field: "Cadastral number",
+    value: "10:04:01:02:03:0145",
+    document: "Cadastral document - APT-026",
+    confidence: "high",
+    status: "confirmed"
+  },
+  {
+    id: "floor",
+    field: "Floor",
+    value: "5 of 9",
+    document: "Technical passport - building page",
+    confidence: "medium",
+    status: "needs-review"
+  },
+  {
+    id: "purpose",
+    field: "Purpose / use",
+    value: "Residential apartment for collateral valuation",
+    document: "Assignment / cadastral document",
+    confidence: "medium",
+    status: "needs-review"
+  },
+  {
+    id: "repair-condition",
+    field: "Repair condition",
+    value: "Not determined",
+    document: "Requires manual inspection check",
+    confidence: "unknown",
+    status: "missing"
+  },
+  {
+    id: "layout-changes",
+    field: "Layout changes",
+    value: "Not determined",
+    document: "Requires manual check",
+    confidence: "unknown",
+    status: "missing"
+  }
 ];
 
 const objectDescriptionAiDraft = "The subject property is an apartment used for collateral valuation. The draft combines address, area, building type, inspection notes, and document references for appraiser review.";
@@ -228,6 +280,8 @@ let state = {
   manualEditText: "",
   rollbackMessage: false,
   showAiSources: false,
+  sourceHighConfidenceConfirmed: false,
+  sourceManualReviewField: "",
   selectedFindingId: "F-01",
   findingDecisions: {},
   calculationMode: "native",
@@ -1101,10 +1155,89 @@ function workflowContent(item) {
   return workflowOverview(item);
 }
 
+function sourceFieldState(field) {
+  if (state.sourceManualReviewField === field.id) return "needs-review";
+  if (state.sourceHighConfidenceConfirmed && field.confidence === "high") return "confirmed";
+  return field.status;
+}
+
+function sourceStatusLabel(status) {
+  if (status === "confirmed") return "confirmed";
+  if (status === "needs-review") return "needs review";
+  return "missing";
+}
+
+function sourceStatusClass(status) {
+  if (status === "confirmed") return "status-issued";
+  if (status === "needs-review") return "status-review";
+  return "status-returned";
+}
+
+function sourceConfidenceClass(confidence) {
+  if (confidence === "high") return "source-confidence-high";
+  if (confidence === "medium") return "source-confidence-medium";
+  if (confidence === "low") return "source-confidence-low";
+  return "source-confidence-unknown";
+}
+
+function sourceFieldsByStatus(status) {
+  return aiSourceFieldMappings.filter(field => sourceFieldState(field) === status);
+}
+
+function sourceFieldRow(field) {
+  const status = sourceFieldState(field);
+  return `<div class="source-field-row ${status}">
+    <div>
+      <strong>${field.field}</strong>
+      <span>${field.value}</span>
+    </div>
+    <div>
+      <small>Source document</small>
+      <span>${field.document}</span>
+    </div>
+    <div class="source-field-meta">
+      <i class="${sourceConfidenceClass(field.confidence)}">${field.confidence}</i>
+      <em class="status-pill ${sourceStatusClass(status)}">${sourceStatusLabel(status)}</em>
+    </div>
+    <button class="mini-button" data-source-review="${field.id}">Mark field for manual review</button>
+  </div>`;
+}
+
+function sourceGroup(title, status) {
+  const fields = sourceFieldsByStatus(status);
+  return `<section class="source-group">
+    <div class="source-group-head"><strong>${title}</strong><span>${fields.length}</span></div>
+    ${fields.length ? fields.map(sourceFieldRow).join("") : `<p>No fields in this group.</p>`}
+  </section>`;
+}
+
+function sourcesDetailView() {
+  return `<aside class="context-panel ai-assistant-demo-panel">
+    <div class="panel-header">
+      <div><span class="eyebrow">Sources detail view</span><h2>Object Description sources</h2></div>
+      <span class="status-pill status-review">static demo</span>
+    </div>
+    <div class="assistant-source-detail">
+      <div class="assistant-bubble">
+        <strong>Field-level trace</strong>
+        <p>Each extracted field shows the value used in the draft, the supporting document, confidence, and appraiser review state.</p>
+      </div>
+      <div class="source-detail-actions">
+        <button class="primary-button" data-source-action="confirm-high">Confirm all high-confidence fields</button>
+        <button class="secondary-button" data-source-action="back">Back to AI Assistant</button>
+      </div>
+      ${sourceGroup("Confirmed data", "confirmed")}
+      ${sourceGroup("Needs appraiser review", "needs-review")}
+      ${sourceGroup("Missing or not determined", "missing")}
+    </div>
+  </aside>`;
+}
+
 function aiAssistantDemoPanel() {
   const selected = selectedWorkspaceSection();
   const objectSelected = selected.id === "object";
   const confidence = state.aiAssistantAction === "regenerated" ? "Medium" : state.aiAssistantAction === "rejected" ? "Low" : "Medium-high";
+  if (state.showAiSources && objectSelected) return sourcesDetailView();
   return `<aside class="context-panel ai-assistant-demo-panel">
     <div class="panel-header">
       <div><span class="eyebrow">AI Assistant demo</span><h2>${objectSelected ? "Object Description" : "Select Object Description"}</h2></div>
@@ -1129,9 +1262,6 @@ function aiAssistantDemoPanel() {
       <p>${objectSelected ? "Legal wording for final ownership statement and whether the latest address spelling is approved." : "No assistant check has run."}</p>
     </div>
     <div class="assistant-risk ${confidence === "Low" ? "low" : "medium"}"><strong>${confidence}</strong><span>confidence / risk indicator</span></div>
-    ${state.showAiSources && objectSelected ? `<div class="assistant-sources">
-      ${aiAssistantSources.map(source => `<div><span class="file-icon">SRC</span><strong>${source}</strong></div>`).join("")}
-    </div>` : ""}
     <div class="assistant-actions">
       <button class="primary-button" data-ai-action="accept" ${objectSelected ? "" : "disabled"}>Accept draft</button>
       <button class="secondary-button" data-ai-action="edit" ${objectSelected ? "" : "disabled"}>Edit manually</button>
@@ -1265,6 +1395,17 @@ function bindAppraiserWorkflowActions() {
       state.rollbackMessage = false;
     }
     if (el.dataset.aiAction === "sources") state.showAiSources = !state.showAiSources;
+    state.workflowTab = "workspace";
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-source-action]").forEach(el => el.addEventListener("click", () => {
+    if (el.dataset.sourceAction === "confirm-high") state.sourceHighConfidenceConfirmed = true;
+    if (el.dataset.sourceAction === "back") state.showAiSources = false;
+    state.workflowTab = "workspace";
+    renderAppraiserWorkflow(state.caseId);
+  }));
+  document.querySelectorAll("[data-source-review]").forEach(el => el.addEventListener("click", () => {
+    state.sourceManualReviewField = el.dataset.sourceReview;
     state.workflowTab = "workspace";
     renderAppraiserWorkflow(state.caseId);
   }));

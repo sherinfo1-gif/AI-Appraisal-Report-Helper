@@ -99,6 +99,14 @@ The assistant panel can reveal sources and simulate accept, manual edit,
 regenerate, and reject actions. These interactions are static prototype state
 only and do not call an API or process files.
 
+The source reveal opens a Sources Detail View for the Object Description draft.
+It groups field-level source mappings into confirmed data, data needing
+appraiser review, and missing/not determined items. Each row shows the extracted
+value, source document, confidence, and review status. The appraiser can confirm
+high-confidence fields, mark a field for manual review, and return to the
+assistant panel. This is a transparency demo only; no OCR, parsing, database
+write, or source-file access is connected.
+
 The Object Description section now demonstrates the manual-edit path after an
 AI draft. The appraiser can open a prefilled edit panel, save an appraiser
 version, review a two-item version history, and rollback to the AI draft. This

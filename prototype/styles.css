@@ -962,6 +962,27 @@ kbd { border-color: #e3e7ed; color: #8a94a6; box-shadow: 0 1px 1px rgba(16,24,40
 .assistant-sources strong { font-size: 11px; }
 .assistant-actions { display: grid; gap: 8px; padding-bottom: 18px; }
 .assistant-actions button { width: 100%; }
+.assistant-source-detail { padding: 14px 18px 18px; }
+.source-detail-actions { display: grid; gap: 8px; margin-top: 12px; }
+.source-group { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfe; }
+.source-group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.source-group-head strong { font-size: 12px; }
+.source-group-head span { min-width: 24px; padding: 3px 7px; border-radius: 12px; color: #536078; background: #eef2f7; font-size: 10px; font-weight: 800; text-align: center; }
+.source-group p { margin: 0; color: var(--muted); font-size: 11px; }
+.source-field-row { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; padding: 10px; border: 1px solid #e3e8f1; border-radius: 10px; background: white; margin-top: 8px; }
+.source-field-row.confirmed { border-color: #cbe9dc; background: #f7fcfa; }
+.source-field-row.needs-review { border-color: #f0dca8; background: #fffaf0; }
+.source-field-row.missing { border-color: #f0cdd0; background: #fff8f8; }
+.source-field-row strong, .source-field-row span, .source-field-row small { display: block; }
+.source-field-row strong { font-size: 12px; }
+.source-field-row span { margin-top: 3px; color: #475467; font-size: 11px; line-height: 1.35; }
+.source-field-row small { color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.source-field-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.source-field-meta i { border-radius: 12px; padding: 4px 8px; font-size: 10px; font-style: normal; font-weight: 800; }
+.source-confidence-high { color: #156e4e; background: var(--success-bg); }
+.source-confidence-medium { color: #805400; background: var(--warning-bg); }
+.source-confidence-low, .source-confidence-unknown { color: #9e3039; background: var(--danger-bg); }
+.source-field-row .mini-button { justify-self: start; }
 
 @media (max-width: 1100px) {
   .case-layout { grid-template-columns: 1fr; }
