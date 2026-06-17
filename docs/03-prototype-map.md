@@ -82,7 +82,7 @@ Required clickable path:
 
 1. Open the dashboard or case list.
 2. Open the active apartment valuation case or create a case from the header
-   action.
+   action; both routes land on the case overview.
 3. Review the case overview.
 4. Review uploaded/report materials as static demo cards.
 5. Review the report section structure.
@@ -91,7 +91,8 @@ Required clickable path:
 8. Choose one finding decision: corrected, disagree, or escalate to director.
 9. Review the case status summary.
 
-The active case also includes a Case Workspace view for `APT-026`. This view
+The active case also includes a secondary Case Workspace view for `APT-026`.
+This view
 shows basic case information, a static materials summary, report sections, the
 selected Object Description section, and a right-side AI Assistant demo panel.
 The assistant panel can reveal sources and simulate accept, manual edit,

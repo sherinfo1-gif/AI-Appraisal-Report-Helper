@@ -220,7 +220,7 @@ let state = {
   stage: 0,
   context: "ai",
   reportSection: "approaches",
-  workflowTab: "workspace",
+  workflowTab: "overview",
   workspaceSection: "object",
   aiAssistantAction: "draft",
   aiDraftVariant: 0,
@@ -868,16 +868,22 @@ function workflowStatusSummary() {
 
 function workflowTabs() {
   const tabs = [
-    ["workspace", "Case workspace"],
     ["overview", "Overview"],
     ["materials", "Materials"],
     ["report", "Report sections"],
     ["findings", "Helper findings"],
-    ["status", "Status summary"]
+    ["status", "Status summary"],
+    ["workspace", "Case workspace"]
   ];
   return `<div class="workflow-tabs">${tabs.map(([id, label]) => `
     <button class="workflow-tab ${state.workflowTab === id ? "active" : ""}" data-workflow-tab="${id}">${label}</button>
   `).join("")}</div>`;
+}
+
+function workflowStepActions(actions) {
+  return `<div class="workflow-step-actions">
+    ${actions.map(action => `<button class="${action.primary ? "primary-button" : "secondary-button"}" data-workflow-tab="${action.tab}">${action.label}</button>`).join("")}
+  </div>`;
 }
 
 function workspaceStatus(section) {
@@ -998,7 +1004,8 @@ function workflowOverview(item) {
       ${["Dashboard", "Case overview", "Materials", "Report structure", "Findings", "Decision", "Status"].map((step, index) => `
         <div class="workflow-step ${index < 2 ? "done" : ""}"><i>${index + 1}</i><strong>${step}</strong></div>
       `).join("")}
-    </div>`;
+    </div>
+    ${workflowStepActions([{ tab: "materials", label: "Review materials", primary: true }, { tab: "workspace", label: "Open case workspace" }])}`;
 }
 
 function workflowMaterials() {
@@ -1011,7 +1018,8 @@ function workflowMaterials() {
         </article>
       `).join("")}
     </div>
-    <div class="warning-callout"><strong>Static materials only</strong><span>These cards are demo artifacts inside the clickable prototype. They do not upload, parse, generate, or persist files.</span></div>`;
+    <div class="warning-callout"><strong>Static materials only</strong><span>These cards are demo artifacts inside the clickable prototype. They do not upload, parse, generate, or persist files.</span></div>
+    ${workflowStepActions([{ tab: "report", label: "Review report structure", primary: true }, { tab: "overview", label: "Back to overview" }])}`;
 }
 
 function workflowReportSections() {
@@ -1024,7 +1032,8 @@ function workflowReportSections() {
           <i class="section-state ${section.status}"></i>
         </article>
       `).join("")}
-    </div>`;
+    </div>
+    ${workflowStepActions([{ tab: "findings", label: "Open helper findings", primary: true }, { tab: "materials", label: "Back to materials" }])}`;
 }
 
 function workflowFindings() {
@@ -1055,6 +1064,7 @@ function workflowFindings() {
             ["escalate", "Escalate to director"]
           ].map(([id, label]) => `<button class="${decision === id ? "primary-button" : "secondary-button"}" data-finding-action="${id}">${label}</button>`).join("")}
         </div>
+        ${decision ? workflowStepActions([{ tab: "status", label: "Review status summary", primary: true }]) : ""}
       </article>
     </div>`;
 }
@@ -1078,7 +1088,8 @@ function workflowStatus() {
         finding.section,
         workflowDecisionLabel(state.findingDecisions[finding.id])
       )).join("")}
-    </div>`;
+    </div>
+    ${workflowStepActions([{ tab: "findings", label: "Return to findings", primary: false }])}`;
 }
 
 function workflowContent(item) {
@@ -1214,7 +1225,7 @@ function navigate(view) {
 function bindCommonActions() {
   document.querySelectorAll("[data-open-case]").forEach(el => el.addEventListener("click", () => {
     if (el.dataset.openCase === "APT-026") {
-      state.workflowTab = "workspace";
+      state.workflowTab = "overview";
       renderAppraiserWorkflow(el.dataset.openCase);
       return;
     }
@@ -1333,7 +1344,7 @@ document.getElementById("start-case").addEventListener("click", () => {
   state.stage = 0;
   if (state.caseMode === "composite") renderCompositeBlueprint();
   else {
-    state.workflowTab = "workspace";
+    state.workflowTab = "overview";
     renderAppraiserWorkflow("APT-026");
   }
 });
