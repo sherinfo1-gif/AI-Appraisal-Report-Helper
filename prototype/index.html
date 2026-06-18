@@ -3,54 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Report Helper - прототип</title>
+  <title>AI Report Helper - frontend prototype</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Основная навигация">
       <div class="brand">
         <div class="brand-mark">AR</div>
         <div>
-          <strong>Оценка</strong>
-          <span>AI Report Helper</span>
+          <strong>AI Report Helper</strong>
+          <span>Frontend prototype</span>
         </div>
       </div>
 
-      <nav class="main-nav" aria-label="Основная навигация">
-        <button class="nav-item active" data-view="dashboard">
-          <span class="nav-icon">⌂</span><span>Главная</span>
+      <nav class="main-nav">
+        <button class="nav-item active" type="button">
+          <span class="nav-icon">D</span>
+          <span>Рабочий стол</span>
         </button>
-        <button class="nav-item" data-view="cases">
-          <span class="nav-icon">▤</span><span>Оценочные дела</span>
-          <span class="nav-badge">8</span>
+        <button class="nav-item" type="button" disabled>
+          <span class="nav-icon">C</span>
+          <span>Кейсы</span>
         </button>
-        <button class="nav-item" data-view="archive">
-          <span class="nav-icon">□</span><span>Архив</span>
-        </button>
-        <div class="nav-caption">Управление знаниями</div>
-        <button class="nav-item" data-view="templates">
-          <span class="nav-icon">▧</span><span>Шаблоны</span>
-        </button>
-        <button class="nav-item" data-view="methodology">
-          <span class="nav-icon">◫</span><span>Методика</span>
-        </button>
-        <button class="nav-item" data-view="references">
-          <span class="nav-icon">⌘</span><span>Справочники</span>
+        <button class="nav-item" type="button" disabled>
+          <span class="nav-icon">R</span>
+          <span>Ревью</span>
         </button>
       </nav>
 
-      <div class="sidebar-bottom">
-        <button class="nav-item" data-view="settings">
-          <span class="nav-icon">⚙</span><span>Настройки</span>
-        </button>
-        <div class="user-card">
-          <div class="avatar">АС</div>
-          <div>
-            <strong>Алексей Салиев</strong>
-            <span>Оценщик</span>
-          </div>
-          <span class="user-menu">•••</span>
+      <div class="user-card">
+        <div class="avatar">AK</div>
+        <div>
+          <strong>Aziz Karimov</strong>
+          <span>Оценщик</span>
         </div>
       </div>
     </aside>
@@ -58,90 +45,113 @@
     <section class="workspace">
       <header class="topbar">
         <div>
-          <div class="eyebrow" id="breadcrumb">Рабочий кабинет</div>
-          <h1 id="page-title">Главная</h1>
+          <span class="eyebrow">Happy Path</span>
+          <h1 id="page-title">Рабочий стол оценщика</h1>
         </div>
-        <div class="topbar-actions">
-          <label class="global-search">
-            <span>⌕</span>
-            <input type="search" placeholder="Поиск отчета, объекта, заказчика">
-            <kbd>Ctrl K</kbd>
-          </label>
-          <button class="icon-button" aria-label="Уведомления">◉<span class="notification-dot"></span></button>
-          <button class="primary-button" id="create-case">+ Новая оценка</button>
-        </div>
+        <button class="primary-button" type="button" id="create-case-button">
+          Создать новый кейс
+        </button>
       </header>
 
-      <main id="main-content" class="main-content"></main>
+      <main class="main-content">
+        <section class="screen" id="dashboard-screen" aria-labelledby="dashboard-title">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Текущие задания</span>
+              <h2 id="dashboard-title">Кейсы в работе</h2>
+            </div>
+            <span class="counter" id="case-counter">0</span>
+          </div>
+
+          <div class="table-panel">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Код</th>
+                  <th>Объект</th>
+                  <th>Заказчик</th>
+                  <th>Статус</th>
+                  <th>Текущий шаг</th>
+                  <th>Срок</th>
+                </tr>
+              </thead>
+              <tbody id="cases-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="screen hidden" id="create-case-screen" aria-labelledby="create-case-title">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Шаг 2</span>
+              <h2 id="create-case-title">Заполнение базовых данных</h2>
+            </div>
+            <span class="status-pill">basic-data</span>
+          </div>
+
+          <div class="workflow-strip" id="workflow-strip"></div>
+
+          <form class="case-form" id="case-basic-form">
+            <label>
+              Адрес объекта
+              <input id="subject-address-input" type="text">
+            </label>
+            <label>
+              Площадь, кв. м
+              <input id="subject-area-input" type="number" min="1" step="0.1">
+            </label>
+            <label>
+              Количество комнат
+              <input id="subject-rooms-input" type="number" min="1" step="1">
+            </label>
+            <label>
+              Цель оценки
+              <select id="valuation-purpose-input">
+                <option value="collateral">Залоговое обеспечение</option>
+                <option value="sale">Купля-продажа</option>
+                <option value="internal">Внутреннее решение заказчика</option>
+              </select>
+            </label>
+          </form>
+
+          <div class="ai-loading hidden" id="ai-loading">
+            <span class="spinner" aria-hidden="true"></span>
+            <div>
+              <strong>ИИ готовит предложения для отчета</strong>
+              <span>Симуляция анализа введенных данных и материалов кейса.</span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="secondary-button" type="button" id="back-to-dashboard-button">
+              Назад
+            </button>
+            <button class="primary-button" type="button" id="run-ai-button">
+              Сохранить и запустить ИИ-генерацию
+            </button>
+          </div>
+        </section>
+
+        <section class="screen hidden" id="case-workspace-screen" aria-labelledby="case-workspace-title">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Шаг 3</span>
+              <h2 id="case-workspace-title">Рабочая область кейса</h2>
+            </div>
+            <span class="status-pill">ai-proposals</span>
+          </div>
+
+          <div class="workflow-strip" id="workspace-workflow-strip"></div>
+
+          <div class="workspace-summary" id="workspace-summary"></div>
+
+          <div class="proposal-grid" id="ai-proposals-list"></div>
+        </section>
+      </main>
     </section>
   </div>
 
-  <div class="modal-backdrop hidden" id="new-case-modal">
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div class="modal-header">
-        <div>
-          <span class="eyebrow">Новое оценочное дело</span>
-          <h2 id="modal-title">Выберите направление оценки</h2>
-        </div>
-        <button class="icon-button" id="close-modal" aria-label="Закрыть">×</button>
-      </div>
-      <div class="case-mode-switch">
-        <button class="case-mode active" data-case-mode="single">
-          <strong>Один тип объектов</strong>
-          <small>Один профиль, один расчетный маршрут</small>
-        </button>
-        <button class="case-mode" data-case-mode="composite">
-          <strong>Составной отчет</strong>
-          <small>Несколько групп объектов в одном деле</small>
-        </button>
-      </div>
-      <div class="valuation-direction-grid">
-        <button class="valuation-direction selected" data-direction="real_estate">
-          <span class="direction-icon">⌂</span><strong>Недвижимость</strong><small>Земля, здания и помещения</small>
-        </button>
-        <button class="valuation-direction" data-direction="equipment">
-          <span class="direction-icon">⚙</span><strong>Оборудование</strong><small>Машины и производственные линии</small>
-        </button>
-        <button class="valuation-direction" data-direction="vehicles">
-          <span class="direction-icon">▱</span><strong>Автотранспорт</strong><small>Легковые, грузовые автомобили и автопарки</small>
-        </button>
-        <button class="valuation-direction" data-direction="special_machinery">
-          <span class="direction-icon">▰</span><strong>Спецтехника</strong><small>Строительные и дорожные машины</small>
-        </button>
-        <button class="valuation-direction" data-direction="business">
-          <span class="direction-icon">▤</span><strong>Бизнес</strong><small>Компания, доля или имущественный комплекс</small>
-        </button>
-        <button class="valuation-direction" data-direction="intangibles">
-          <span class="direction-icon">◇</span><strong>Нематериальные активы</strong><small>Бренды, ПО, патенты и права</small>
-        </button>
-      </div>
-      <div class="object-type-section">
-        <div class="modal-section-title"><span>Тип объекта</span><small id="direction-description"></small></div>
-        <div class="object-type-grid" id="object-type-grid"></div>
-      </div>
-      <div class="composition-builder hidden" id="composition-builder">
-        <div class="composition-builder-head">
-          <div><span class="eyebrow">Состав оценочного дела</span><strong>Добавьте независимые группы объектов</strong></div>
-          <button class="secondary-button" id="add-composition-group">+ Добавить выбранную группу</button>
-        </div>
-        <div class="composition-list" id="composition-list"></div>
-        <div class="composition-note">Общие сведения вводятся один раз. Для каждой группы загружается собственный профиль, расчет и глава отчета.</div>
-      </div>
-      <div class="workflow-preview" id="workflow-preview"></div>
-      <div class="quick-form">
-        <label class="wide">Шаблон отчета<select id="template-select"></select></label>
-        <label>Заказчик<input value="ООО «ORIENT FINANCE»"></label>
-        <label>Дата оценки<input type="date" value="2026-06-12"></label>
-        <label>Цель оценки<select><option>Залоговое обеспечение</option><option>Купля-продажа</option></select></label>
-        <label>Исполнитель<select><option>Алексей Салиев</option><option>Малика Каримова</option></select></label>
-      </div>
-      <div class="modal-footer">
-        <button class="secondary-button" id="cancel-modal">Отмена</button>
-        <button class="primary-button" id="start-case">Создать и продолжить →</button>
-      </div>
-    </section>
-  </div>
-
-  <script src="app.js"></script>
+  <script src="src/mock-state.js"></script>
+  <script src="src/app.js"></script>
 </body>
 </html>

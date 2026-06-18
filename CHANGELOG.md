@@ -9,6 +9,12 @@ The project does not yet have a stable public release.
 
 ### Added
 
+- Simplified frontend-only prototype entrypoint with a dashboard case table,
+  in-memory `window.MockState`, and CSS-class screen switching for the approved
+  happy-path workflow.
+- Added the frontend-only Basic Fields step with in-memory case updates,
+  simulated AI generation loading, and a Case Workspace that renders mock AI
+  proposals from `window.MockState`.
 - Repository-wide Codex instructions in `AGENTS.md`.
 - Explicit repository structure and prototype/production boundary documentation.
 - Minimal foundation identity model with director, appraiser, and assistant
