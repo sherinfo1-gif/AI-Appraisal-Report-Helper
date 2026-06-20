@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Report Helper - full prototype</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Основная навигация">
+      <div class="brand">
+        <div class="brand-mark">AR</div>
+        <div>
+          <strong>AI Report Helper</strong>
+          <span>Full prototype</span>
+        </div>
+      </div>
+
+      <nav class="main-nav">
+        <button class="nav-item active" type="button" data-view="dashboard">
+          <span class="nav-icon">D</span>
+          <span>Рабочий стол</span>
+        </button>
+        <button class="nav-item" type="button" data-view="cases">
+          <span class="nav-icon">C</span>
+          <span>Кейсы</span>
+        </button>
+        <button class="nav-item" type="button" data-view="review">
+          <span class="nav-icon">R</span>
+          <span>Ревью</span>
+        </button>
+        <button class="nav-item" type="button" data-view="templates">
+          <span class="nav-icon">T</span>
+          <span>Шаблоны</span>
+        </button>
+        <button class="nav-item" type="button" data-view="analytics">
+          <span class="nav-icon">A</span>
+          <span>Аналитика</span>
+        </button>
+      </nav>
+
+      <div class="user-card">
+        <div class="avatar">AK</div>
+        <div>
+          <strong>Aziz Karimov</strong>
+          <span>Оценщик</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow" id="breadcrumb">Рабочий кабинет</span>
+          <h1 id="page-title">Рабочий стол оценщика</h1>
+        </div>
+        <button class="primary-button" type="button" id="create-case">
+          Создать новый кейс
+        </button>
+      </header>
+
+      <main class="main-content" id="main-content"></main>
+    </section>
+  </div>
+
+  <div class="modal hidden" id="new-case-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">Новое оценочное дело</span>
+          <h2 id="modal-title">Выберите направление оценки</h2>
+        </div>
+        <button class="secondary-button" type="button" id="close-modal" aria-label="Закрыть">
+          Закрыть
+        </button>
+      </div>
+
+      <div class="case-mode-switch">
+        <button class="secondary-button active" type="button" data-case-mode="single">
+          Один объект
+        </button>
+        <button class="secondary-button" type="button" data-case-mode="composite">
+          Составной кейс
+        </button>
+      </div>
+
+      <section class="direction-picker" aria-label="Направление оценки">
+        <div class="direction-grid">
+          <button class="direction-card selected" type="button" data-direction="real_estate">
+            <span class="direction-card-icon">⌂</span>
+            <span><strong>Недвижимость</strong></span>
+          </button>
+          <button class="direction-card" type="button" data-direction="equipment">
+            <span class="direction-card-icon">⚙</span>
+            <span><strong>Оборудование</strong></span>
+          </button>
+          <button class="direction-card" type="button" data-direction="vehicles">
+            <span class="direction-card-icon">V</span>
+            <span><strong>Автотранспорт</strong></span>
+          </button>
+          <button class="direction-card" type="button" data-direction="special_machinery">
+            <span class="direction-card-icon">M</span>
+            <span><strong>Спецтехника</strong></span>
+          </button>
+          <button class="direction-card" type="button" data-direction="business">
+            <span class="direction-card-icon">B</span>
+            <span><strong>Бизнес</strong></span>
+          </button>
+          <button class="direction-card" type="button" data-direction="intangibles">
+            <span class="direction-card-icon">I</span>
+            <span><strong>Нематериальные активы</strong></span>
+          </button>
+        </div>
+      </section>
+
+      <p id="direction-description"></p>
+
+      <div class="case-form">
+        <label class="wide">
+          Тип объекта
+          <div id="object-type-grid"></div>
+        </label>
+        <label class="wide">
+          Шаблон
+          <select id="template-select"></select>
+        </label>
+      </div>
+
+      <section class="workflow-strip" id="workflow-preview"></section>
+
+      <section class="case-form hidden" id="composition-builder">
+        <div class="wide">
+          <div id="composition-list"></div>
+          <button class="secondary-button" type="button" id="add-composition-group">
+            Добавить группу
+          </button>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button class="secondary-button" type="button" id="cancel-modal">
+          Отмена
+        </button>
+        <button class="primary-button" type="button" id="start-case">
+          Начать кейс
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

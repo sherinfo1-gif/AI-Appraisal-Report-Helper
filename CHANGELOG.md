@@ -9,6 +9,8 @@ The project does not yet have a stable public release.
 
 ### Added
 
+- Standalone `prototype/full.html` entrypoint that wires the full static
+  prototype script without loading the simplified prototype scripts.
 - Simplified frontend-only prototype entrypoint with a dashboard case table,
   in-memory `window.MockState`, and CSS-class screen switching for the approved
   happy-path workflow.
